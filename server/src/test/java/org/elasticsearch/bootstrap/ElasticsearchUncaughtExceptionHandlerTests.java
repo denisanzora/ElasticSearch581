@@ -116,7 +116,7 @@ public class ElasticsearchUncaughtExceptionHandlerTests extends ESTestCase {
         assertThat(throwableReference.get(), equalTo(e));
     }
 
-    public void testIsFatalCause() {
+   public void testIsFatalCause() {
         assertFatal(new OutOfMemoryError());
         assertFatal(new StackOverflowError());
         assertFatal(new InternalError());
@@ -124,6 +124,8 @@ public class ElasticsearchUncaughtExceptionHandlerTests extends ESTestCase {
         assertFatal(new IOError(new IOException()));
         assertNonFatal(new RuntimeException());
         assertNonFatal(new UncheckedIOException(new IOException()));
+        assertAssertionError(new AssertionError());
+        assertNonAssertionError(new IOException());
     }
 
     private void assertFatal(Throwable cause) {
@@ -133,5 +135,10 @@ public class ElasticsearchUncaughtExceptionHandlerTests extends ESTestCase {
     private void assertNonFatal(Throwable cause) {
         assertFalse(ElasticsearchUncaughtExceptionHandler.isFatalUncaught(cause));
     }
-
+    private void assertAssertionError(Throwable cause) {
+        assertTrue(ElasticsearchUncaughtExceptionHandler.isAssertionError(cause));
+    }
+    private void assertNonAssertionError(Throwable cause) {
+        assertFalse(ElasticsearchUncaughtExceptionHandler.isAssertionError(cause));
+    }
 }

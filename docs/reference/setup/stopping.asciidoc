@@ -38,6 +38,11 @@ $ kill -SIGTERM 15516
 
 [discrete]
 [[fatal-errors]]
+
+=== Handling non-Fatal Errors
+
+If Elasticsearch encounters an AssertionError, the thread will be interrupted and the Elasticsearch virtual machine will continue.  Thread interruption is a gentle way to nudge a thread. It is used to give threads a chance to exit cleanly.
+
 === Stopping on Fatal Errors
 
 During the life of the Elasticsearch virtual machine, certain fatal errors could arise that put the

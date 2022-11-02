@@ -27,7 +27,10 @@ class ElasticsearchUncaughtExceptionHandler implements Thread.UncaughtExceptionH
             } finally {
                 // we use specific error codes in case the above notification failed, at least we
                 // will have some indication of the error bringing us down
-                if (t instanceof InternalError) {
+                if (isAssertionError(t)) {
+                    thread.interrupt();
+                }
+                else if (t instanceof InternalError) {
                     halt(128);
                 } else if (t instanceof OutOfMemoryError) {
                     halt(127);
@@ -48,6 +51,10 @@ class ElasticsearchUncaughtExceptionHandler implements Thread.UncaughtExceptionH
 
     static boolean isFatalUncaught(Throwable e) {
         return e instanceof Error;
+    }
+
+    static boolean isAssertionError(Throwable e) {
+        return e instanceof AssertionError;
     }
 
     void onFatalUncaught(final String threadName, final Throwable t) {
