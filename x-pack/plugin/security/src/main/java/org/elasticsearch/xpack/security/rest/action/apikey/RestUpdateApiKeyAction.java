@@ -36,7 +36,7 @@ public final class RestUpdateApiKeyAction extends ApiKeyBaseRestHandler {
     static {
         PARSER.declareNamedObjects(optionalConstructorArg(), (p, c, n) -> {
             p.nextToken();
-            return RoleDescriptor.parse(n, p, false);
+            return RoleDescriptor.parse(n, p);
         }, new ParseField("role_descriptors"));
         PARSER.declareObject(optionalConstructorArg(), (p, c) -> p.map(), new ParseField("metadata"));
     }

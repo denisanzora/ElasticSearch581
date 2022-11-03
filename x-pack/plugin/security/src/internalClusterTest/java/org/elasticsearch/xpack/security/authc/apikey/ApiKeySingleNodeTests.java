@@ -207,7 +207,6 @@ public class ApiKeySingleNodeTests extends SecuritySingleNodeTestCase {
         final RoleDescriptor roleDescriptor = RoleDescriptor.parse(
             "elastic/fleet-server",
             XContentTestUtils.convertToXContent(descriptor, XContentType.JSON),
-            false,
             XContentType.JSON
         );
         assertThat(roleDescriptor, equalTo(ServiceAccountService.getServiceAccounts().get("elastic/fleet-server").roleDescriptor()));

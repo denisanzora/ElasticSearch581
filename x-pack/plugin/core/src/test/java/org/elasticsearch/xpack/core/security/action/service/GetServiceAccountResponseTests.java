@@ -100,7 +100,6 @@ public class GetServiceAccountResponseTests extends AbstractWireSerializingTestC
             RoleDescriptor.parse(
                 roleDescriptor.getName(),
                 XContentTestUtils.convertToXContent(descriptorMap, XContentType.JSON),
-                false,
                 XContentType.JSON
             ),
             equalTo(roleDescriptor)

@@ -2647,7 +2647,6 @@ public class ApiKeyIntegTests extends SecurityIntegTestCase {
             final var roleDescriptor = RoleDescriptor.parse(
                 expectedRoleDescriptor.getName(),
                 XContentTestUtils.convertToXContent(descriptor, XContentType.JSON),
-                false,
                 XContentType.JSON
             );
             assertEquals(expectedRoleDescriptor, roleDescriptor);
