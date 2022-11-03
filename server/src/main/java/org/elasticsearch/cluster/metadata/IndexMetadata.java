@@ -474,26 +474,6 @@ public class IndexMetadata implements Diffable<IndexMetadata>, ToXContentFragmen
         Setting.Property.Final
     );
 
-    /**
-     * Legacy index setting, kept for 7.x BWC compatibility. This setting has no effect in 8.x.
-     * Do not use
-     * TODO: Remove in 9.0
-     *
-     */
-    @Deprecated
-    Public static final Setting<string> INDEX_ROLLUP_SOURCE_NAME =
-        Setting.simpleString(
-            "index.rollup.source.name",
-            Property.IndexScope,
-            Property.PrivateIndex,
-            Property.IndexSettingDeprecatedInV7AndRemovedInV8
-
-
-
-        );
-
-
-
 
 
     public static final Setting<List<String>> INDEX_ROUTING_PATH = Setting.listSetting(
@@ -503,6 +483,15 @@ public class IndexMetadata implements Diffable<IndexMetadata>, ToXContentFragmen
         Setting.Property.IndexScope,
         Setting.Property.Final
     );
+    // New Line of code for this file
+    //trying to create a method that will take list string as a value for settings
+    // need this function to  make the change
+    public static final Setting<List<String>> CONTEXTS_ALLOWED_SETTING=
+        Setting.listSetting("script.allowed_contexts",
+            Collections.emptyList(),
+            Function.identity(),
+            Setting.Property.NodeScope
+        );
 
     public static final String KEY_IN_SYNC_ALLOCATIONS = "in_sync_allocations";
     static final String KEY_VERSION = "version";
