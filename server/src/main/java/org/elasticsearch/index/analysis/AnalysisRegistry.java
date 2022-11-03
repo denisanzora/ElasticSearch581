@@ -297,6 +297,84 @@ public final class AnalysisRegistry implements Closeable {
         }, null, null, null);
 
     }
+    // New lines added to this file in order to fix issue 85710
+    //buildCustom analyzer
+    private static Analyzer buildCustomAnalyzer(
+        AnalyzeAction.Request request,
+        AnalysisRegistry analysisRegistry,
+        IndexSettings indexSettings
+
+    ) throws IOException {
+        if (request.tokenizer() != null) {
+            return analysisRegistry.buildCustomAnalyzer(
+                indexSettings,
+                false,
+                request.tokenizer(),
+                request.charFilters(),
+                request.tokenFilters()
+
+            );
+        } else if (((request.tokenFilters() != null && request.tokenFilters().size() > 0)
+            || (request.charFilters() != null &&
+            request.charFilters().size() > 0))) {
+            return analysisRegistry.buildCustomAnalyzer(
+                indexSettings,
+                true,
+                new NameOrDefinition("keyword"),
+                request.charFilters(),
+                request.tokenFilters()
+            );
+        }
+        return null;
+    }
+
+//added a list to figure out a solution for this error.
+    private static List<AnalyzeAction.AnalyzeToken>
+    simpleAnalyze(AnalyzeAction.Request request, Analyzer analyzer, int maxTokenCount){
+        TokenCounter tc = new TokenCounter(maxTokenCount);
+        List<AnalyzeAction.AnalyzeToken> tokens = new ArrayList<>();
+        int lastPosition = -1;
+        int lastOffset = 0;
+        for (String text : request.text()){
+            try(TokenStream stream = analyzer.tokenStream(request.field(), text))
+            {
+                stream.reset();
+                CharTermAttribute term =stream.addAttribute(CharTermAttribute.class);
+                PositionIncrementAttribute posIncr= stream.addAttribute(PositionIncrementAttribute.class);
+                OffsetAttribute offset = stream.addAttribute(OffsetAttribute.class);
+                TypeAttribute type = stream.addAttribute(TypeAttribute.class);
+                PositionLengthAttribute posLen = stream.addAttribute(PositionLengthAttribute.class);
+
+                while(stream.incrementToken()){
+                    int increment= posIncr.getPositionIncrement();
+                    if(increment >0){
+                        lastPosition= lastPosition + increment;
+                    }
+                    tokens.add(
+                        new AnlyzeAction.AnalyzeToken(
+                            term.toString(),
+                            lastPosition,
+                            lastOffset + offset.startOffset(),
+                            lastOffset + offset.endOffset(),
+                            posLen.getPositionLength(),
+                            type.type(),
+                            null
+                        )
+                    );
+                    tc.increment();
+                }
+                stream.end();
+                lastOffset += offset.endOffset();
+                lastPosition += posIncr.getPositionIncrement();
+                lastPosition += analyzer.getPositionIncremntGap(request.field());
+                lastOffset += analyzer.getOffsetGap(request.field());
+            } catch (IOException e) {
+                throw new ElasticsearchException("failed to analyze", e);
+            }
+        }
+        return tokens;
+
+     }
 
     public Map<String, TokenFilterFactory> buildTokenFilterFactories(IndexSettings indexSettings) throws IOException {
         final Map<String, Settings> tokenFiltersSettings = indexSettings.getSettings().getGroups(INDEX_ANALYSIS_FILTER);
