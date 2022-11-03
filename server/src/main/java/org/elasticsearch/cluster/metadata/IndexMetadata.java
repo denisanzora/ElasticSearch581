@@ -474,6 +474,28 @@ public class IndexMetadata implements Diffable<IndexMetadata>, ToXContentFragmen
         Setting.Property.Final
     );
 
+    /**
+     * Legacy index setting, kept for 7.x BWC compatibility. This setting has no effect in 8.x.
+     * Do not use
+     * TODO: Remove in 9.0
+     *
+     */
+    @Deprecated
+    Public static final Setting<string> INDEX_ROLLUP_SOURCE_NAME =
+        Setting.simpleString(
+            "index.rollup.source.name",
+            Property.IndexScope,
+            Property.PrivateIndex,
+            Property.IndexSettingDeprecatedInV7AndRemovedInV8
+
+
+
+        );
+
+
+
+
+
     public static final Setting<List<String>> INDEX_ROUTING_PATH = Setting.listSetting(
         "index.routing_path",
         List.of(),
