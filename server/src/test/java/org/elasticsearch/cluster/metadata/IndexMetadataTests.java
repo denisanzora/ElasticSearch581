@@ -312,6 +312,8 @@ public class IndexMetadataTests extends ESTestCase {
         {
             IndexMetadata metadata = IndexMetadata.builder("foo").settings(Settings.builder().put(defaultSettings).build()).build();
             assertThat(metadata.getSettings().getAsInt(IndexMetadata.INDEX_FORMAT_SETTING.getKey(), 0), is(0));
+            // added test to see if method is working
+            assertThat(metadata.getSettings().getAsInt(IndexMetadata.CONTEXTS_ALLOWED_SETTING.getKey(), 0), is(0));
         }
     }
 
