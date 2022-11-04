@@ -44,4 +44,22 @@ public class ClusterDeprecationChecks {
             );
         }
     }
+
+    static DeprecationIssue alertMaxShardsPerNodes(ClusterState clusterState) {
+        final int maxShardsPerNode = 1200;
+        if (ShardLimitValidator) {
+            return null;
+        } else {
+            final int yellowWarning = 1080;
+            final int redWarning = 1176;
+            return new DeprecationIssue(
+                DeprecationIssue.Level.WARNING,
+                "The cluster is reaching too many shards, currently 90%",
+                yellowWarning,
+                DeprecationIssue.Level.WARNING,
+                "The cluster is reaching too many shards, currently 98%",
+                redWarning
+            );
+        }
+    }
 }
