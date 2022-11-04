@@ -56,6 +56,16 @@ public class RealmConfigTests extends ESTestCase {
         assertThat(e.getMessage(), containsString("'order' is a mandatory parameter for realm config"));
     }
 
+    /// Added to ensure when native realm is disabled, test will fail.
+    public void testWillFailWhenOrderIsMissingAndDisabled() {
+        Settings settings = Settings.builder()
+            .put(globalSettings)
+            .put(RealmSettings.getFullSettingKey(realmIdentifier, RealmSettings.DISABLED_SETTING), true)
+            .build();
+        final RealmConfig realmConfig = new RealmConfig(realmIdentifier, settings, environment, threadContext);
+        assertThat(realmConfig.enabled(), is(true));
+    }
+
     public void testWillNotFailWhenOrderIsMissingAndDisabled() {
         Settings settings = Settings.builder()
             .put(globalSettings)
@@ -64,6 +74,7 @@ public class RealmConfigTests extends ESTestCase {
         final RealmConfig realmConfig = new RealmConfig(realmIdentifier, settings, environment, threadContext);
         assertThat(realmConfig.enabled(), is(false));
     }
+
 
     public void testXContentSerialization() throws IOException {
         try (XContentBuilder builder = XContentFactory.jsonBuilder()) {
