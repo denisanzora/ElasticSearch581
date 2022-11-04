@@ -212,6 +212,9 @@ public class AnalysisRegistryTests extends ESTestCase {
         assertThat(indexAnalyzers.getDefaultIndexAnalyzer().analyzer(), instanceOf(StandardAnalyzer.class));
         assertThat(indexAnalyzers.getDefaultSearchAnalyzer().analyzer(), instanceOf(EnglishAnalyzer.class));
         assertThat(indexAnalyzers.getDefaultSearchQuoteAnalyzer().analyzer(), instanceOf(EnglishAnalyzer.class));
+        //to test buildcustomAnalyzers
+        assertThat(indexAnalyzers.getDefaultIndexAnalyzer().analyzer(), instanceOf(buildCustomAnalyzer.class));
+
     }
 
     /**
