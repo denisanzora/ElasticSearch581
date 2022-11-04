@@ -122,6 +122,47 @@ class JavaDateFormatter implements DateFormatter {
         }
         return parsers;
     }
+    //added new lines for this file to fix issue 55065
+    public static final DateFormatter DEFAULT_DATE_TIME_FORMATTER =
+        DateFormatter.forPattern("strict_date_optional_time||epoch_millis");
+    public static final DateFormatter DEFAULT_DATE_TIME_NANOS_FORMATTER = DateFormatter.forPattern(
+        "strict_date_optional_time_nanos||epoch_millis"
+    );
+
+    private Instant parseDateTime(String value, ZoneID timeZone, boolean roundUpIfNoTime) {
+        if (Strings.isNullorEmpty(value)) {
+            throw new ElasticsearchParseException("cannot parse empty date");
+        }
+        DateFormatter formatter = roundUpIfNoTime ? this.roundup parser:
+        this.formatter;
+        try {
+            if (timeZone == null) {
+                return DateFormatters.from(formatter.parse(value)).toInstant();
+
+            } else {
+                TemporalAccessor accessor = formatter.parse(value);
+                //Use the offset if provided, otherwise it will fall to the zone/ null
+                ZoneOffset offset = TemporalQueries.offset().queryFrom(accessor);
+                ZoneId zoneId = offset == null ?
+                    TemporalQueries.zoneId().queryFrom(accessor) : ZoneId.ofOffset("", offset);
+                if (zoneId != null) {
+                    timeZone = zoneId;
+                }
+                return
+                    DateFormatters.from(accesor).withZoneSameLocal(timeZone).toInstant();
+            }
+
+            //Catch and throw
+
+        } catch (IllegalArgumentException | DateTimeParseException e) {
+            throw new ElasticsearchParseException(
+                "failed to parse date field [{}] with format [{}]: [{}]",
+                e,
+                value,
+                format,
+                e.getMessage()
+            );
+        }
 
     /**
      * This is when the RoundUp Formatters are created. In further merges (with ||) it will only append them to a list.
