@@ -185,7 +185,7 @@ public final class ScoreScriptUtils {
 
         public double decayNumericExp(double docValue) {
             double distance = Math.max(0.0d, Math.abs(docValue - origin) - offset);
-            return Math.exp(scaling * distance);
+            return Math.exp(0.0, (scaling * distance));
         }
     }
 
@@ -194,10 +194,11 @@ public final class ScoreScriptUtils {
         double offset;
         double scaling;
 
+        
         public DecayNumericGauss(double origin, double scale, double offset, double decay) {
             this.origin = origin;
             this.offset = offset;
-            this.scaling = 0.5 * Math.pow(scale, 2.0) / Math.log(decay);
+            this.scaling = 0.5 * Math.pow(scale, 2.0) / Math.log(decay);  
         }
 
         public double decayNumericGauss(double docValue) {
