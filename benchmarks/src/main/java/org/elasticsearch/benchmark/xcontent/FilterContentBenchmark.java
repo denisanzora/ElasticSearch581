@@ -35,6 +35,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -55,37 +56,37 @@ public class FilterContentBenchmark {
     @Param({ "10_field", "half_field", "all_field", "wildcard_field", "10_wildcard_field" })
     private String fieldCount;
 
-    @Param({ "true" })
+    @Param("true")
     private boolean inclusive;
 
-    private BytesReference source;
-    private XContentParserConfiguration parserConfig;
-    private Set<String> filters;
-    private XContentParserConfiguration parserConfigMatchDotsInFieldNames;
+    private BytesReference source = null;
+    private XContentParserConfiguration parserConfig = null;
+    private Set<String> filters = null;
+    private XContentParserConfiguration parserConfigMatchDotsInFieldNames = null;
 
     @Setup
     public void setup() throws IOException {
-        String sourceFile = switch (type) {
+        final String sourceFile = switch (this.type) {
             case "cluster_stats" -> "monitor_cluster_stats.json";
             case "index_stats" -> "monitor_index_stats.json";
             case "node_stats" -> "monitor_node_stats.json";
-            default -> throw new IllegalArgumentException("Unknown type [" + type + "]");
+            default -> throw new IllegalArgumentException("Unknown type [" + this.type + "]");
         };
-        source = readSource(sourceFile);
-        filters = buildFilters();
-        parserConfig = buildParseConfig(false);
-        parserConfigMatchDotsInFieldNames = buildParseConfig(true);
+        this.source = this.readSource(sourceFile);
+        this.filters = this.buildFilters();
+        this.parserConfig = this.buildParseConfig(false);
+        this.parserConfigMatchDotsInFieldNames = this.buildParseConfig(true);
     }
 
     private Set<String> buildFilters() {
-        Map<String, Object> flattenMap = Maps.flatten(XContentHelper.convertToMap(source, true, XContentType.JSON).v2(), false, true);
-        Set<String> keys = flattenMap.keySet();
-        AtomicInteger count = new AtomicInteger();
-        return switch (fieldCount) {
-            case "10_field" -> keys.stream().filter(key -> count.getAndIncrement() % 5 == 0).limit(10).collect(Collectors.toSet());
-            case "half_field" -> keys.stream().filter(key -> count.getAndIncrement() % 2 == 0).collect(Collectors.toSet());
+        final Map<String, Object> flattenMap = Maps.flatten(XContentHelper.convertToMap(this.source, true, XContentType.JSON).v2(), false, true);
+        final Set<String> keys = flattenMap.keySet();
+        final AtomicInteger count = new AtomicInteger();
+        return switch (this.fieldCount) {
+            case "10_field" -> keys.stream().filter(key -> 0 == count.getAndIncrement() % 5).limit(10).collect(Collectors.toSet());
+            case "half_field" -> keys.stream().filter(key -> 0 == count.getAndIncrement() % 2).collect(Collectors.toSet());
             case "all_field" -> new HashSet<>(keys);
-            case "wildcard_field" -> new HashSet<>(Arrays.asList("*stats"));
+            case "wildcard_field" -> new HashSet<>(List.of("*stats"));
             case "10_wildcard_field" -> Set.of(
                 "*stats.nodes*",
                 "*stats.ind*",
@@ -93,90 +94,90 @@ public class FilterContentBenchmark {
                 "*stats*.xpack",
                 "*stats.*.segments",
                 "*stat*.*.data*",
-                inclusive ? "*stats.**.request_cache" : "*stats.*.request_cache",
-                inclusive ? "*stats.**.stat" : "*stats.*.stat",
-                inclusive ? "*stats.**.threads" : "*stats.*.threads",
+                this.inclusive ? "*stats.**.request_cache" : "*stats.*.request_cache",
+                this.inclusive ? "*stats.**.stat" : "*stats.*.stat",
+                this.inclusive ? "*stats.**.threads" : "*stats.*.threads",
                 "*source_node.t*"
             );
-            default -> throw new IllegalArgumentException("Unknown type [" + type + "]");
+            default -> throw new IllegalArgumentException("Unknown type [" + this.type + "]");
         };
     }
 
     @Benchmark
     public BytesReference filterWithParserConfigCreated() throws IOException {
-        return filter(this.parserConfig);
+        return this.filter(parserConfig);
     }
 
     @Benchmark
     public BytesReference filterWithParserConfigCreatedMatchDotsInFieldNames() throws IOException {
-        return filter(this.parserConfigMatchDotsInFieldNames);
+        return this.filter(parserConfigMatchDotsInFieldNames);
     }
 
     @Benchmark
     public BytesReference filterWithNewParserConfig() throws IOException {
-        XContentParserConfiguration contentParserConfiguration = buildParseConfig(false);
-        return filter(contentParserConfiguration);
+        final XContentParserConfiguration contentParserConfiguration = this.buildParseConfig(false);
+        return this.filter(contentParserConfiguration);
     }
 
     @Benchmark
     public BytesReference filterWithMap() throws IOException {
-        Map<String, Object> sourceMap = XContentHelper.convertToMap(source, false).v2();
-        String[] includes;
-        String[] excludes;
-        if (inclusive) {
-            includes = filters.toArray(Strings.EMPTY_ARRAY);
+        final Map<String, Object> sourceMap = XContentHelper.convertToMap(this.source, false).v2();
+        final String[] includes;
+        final String[] excludes;
+        if (this.inclusive) {
+            includes = this.filters.toArray(Strings.EMPTY_ARRAY);
             excludes = null;
         } else {
             includes = null;
-            excludes = filters.toArray(Strings.EMPTY_ARRAY);
+            excludes = this.filters.toArray(Strings.EMPTY_ARRAY);
         }
-        Map<String, Object> filterMap = XContentMapValues.filter(sourceMap, includes, excludes);
-        return FetchSourcePhase.objectToBytes(filterMap, XContentType.JSON, Math.min(1024, source.length()));
+        final Map<String, Object> filterMap = XContentMapValues.filter(sourceMap, includes, excludes);
+        return FetchSourcePhase.objectToBytes(filterMap, XContentType.JSON, Math.min(1024, this.source.length()));
     }
 
     @Benchmark
     public BytesReference filterWithBuilder() throws IOException {
-        BytesStreamOutput streamOutput = new BytesStreamOutput(Math.min(1024, source.length()));
-        Set<String> includes;
-        Set<String> excludes;
-        if (inclusive) {
-            includes = filters;
+        final BytesStreamOutput streamOutput = new BytesStreamOutput(Math.min(1024, this.source.length()));
+        final Set<String> includes;
+        final Set<String> excludes;
+        if (this.inclusive) {
+            includes = this.filters;
             excludes = Set.of();
         } else {
             includes = Set.of();
-            excludes = filters;
+            excludes = this.filters;
         }
-        XContentBuilder builder = new XContentBuilder(
+        final XContentBuilder builder = new XContentBuilder(
             XContentType.JSON.xContent(),
             streamOutput,
             includes,
             excludes,
             XContentType.JSON.toParsedMediaType()
         );
-        try (XContentParser parser = XContentType.JSON.xContent().createParser(XContentParserConfiguration.EMPTY, source.streamInput())) {
+        try (final XContentParser parser = XContentType.JSON.xContent().createParser(XContentParserConfiguration.EMPTY, this.source.streamInput())) {
             builder.copyCurrentStructure(parser);
             return BytesReference.bytes(builder);
         }
     }
 
-    private XContentParserConfiguration buildParseConfig(boolean matchDotsInFieldNames) {
-        Set<String> includes;
-        Set<String> excludes;
-        if (inclusive) {
-            includes = filters;
+    private XContentParserConfiguration buildParseConfig(final boolean matchDotsInFieldNames) {
+        final Set<String> includes;
+        final Set<String> excludes;
+        if (this.inclusive) {
+            includes = this.filters;
             excludes = null;
         } else {
             includes = null;
-            excludes = filters;
+            excludes = this.filters;
         }
         return XContentParserConfiguration.EMPTY.withFiltering(includes, excludes, matchDotsInFieldNames);
     }
 
-    private BytesReference filter(XContentParserConfiguration contentParserConfiguration) throws IOException {
-        try (BytesStreamOutput os = new BytesStreamOutput()) {
-            XContentBuilder builder = new XContentBuilder(XContentType.JSON.xContent(), os);
-            try (XContentParser parser = XContentType.JSON.xContent().createParser(contentParserConfiguration, source.streamInput())) {
-                if (parser.nextToken() != null) {
+    private BytesReference filter(final XContentParserConfiguration contentParserConfiguration) throws IOException {
+        try (final BytesStreamOutput os = new BytesStreamOutput()) {
+            final XContentBuilder builder = new XContentBuilder(XContentType.JSON.xContent(), os);
+            try (final XContentParser parser = XContentType.JSON.xContent().createParser(contentParserConfiguration, this.source.streamInput())) {
+                if (null != parser.nextToken()) {
                     builder.copyCurrentStructure(parser);
                 }
                 return BytesReference.bytes(builder);
@@ -184,7 +185,7 @@ public class FilterContentBenchmark {
         }
     }
 
-    private BytesReference readSource(String fileName) throws IOException {
+    private BytesReference readSource(final String fileName) throws IOException {
         return Streams.readFully(FilterContentBenchmark.class.getResourceAsStream(fileName));
     }
 }

@@ -42,42 +42,42 @@ public class AvailableIndexFoldersBenchmark {
     private Set<String> excludedDirs;
 
     @Setup
-    public void setup() throws IOException {
-        Path path = Files.createTempDirectory("test");
-        String[] paths = new String[] { path.toString() };
-        dataPath = new NodeEnvironment.DataPath(path);
+    public final void setup() throws IOException {
+        final Path path = Files.createTempDirectory("test");
+        final String[] paths = { path.toString() };
+        this.dataPath = new NodeEnvironment.DataPath(path);
 
         LogConfigurator.setNodeName("test");
-        Settings settings = Settings.builder()
+        final Settings settings = Settings.builder()
             .put(Environment.PATH_HOME_SETTING.getKey(), path)
             .putList(Environment.PATH_DATA_SETTING.getKey(), paths)
             .build();
-        nodeEnv = new NodeEnvironment(settings, new Environment(settings, null));
+        this.nodeEnv = new NodeEnvironment(settings, new Environment(settings, null));
 
-        Files.createDirectories(dataPath.indicesPath);
-        excludedDirs = new HashSet<>();
-        int numIndices = 5000;
+        Files.createDirectories(this.dataPath.indicesPath);
+        this.excludedDirs = new HashSet<>();
+        final int numIndices = 5000;
         for (int i = 0; i < numIndices; i++) {
-            String dirName = "dir" + i;
-            Files.createDirectory(dataPath.indicesPath.resolve(dirName));
-            excludedDirs.add(dirName);
+            final String dirName = "dir" + i;
+            Files.createDirectory(this.dataPath.indicesPath.resolve(dirName));
+            this.excludedDirs.add(dirName);
         }
-        if (nodeEnv.availableIndexFoldersForPath(dataPath).size() != numIndices) {
+        if (this.nodeEnv.availableIndexFoldersForPath(this.dataPath).size() != numIndices) {
             throw new IllegalStateException("bad size");
         }
-        if (nodeEnv.availableIndexFoldersForPath(dataPath, excludedDirs::contains).size() != 0) {
+        if (0 != nodeEnv.availableIndexFoldersForPath(dataPath, excludedDirs::contains).size()) {
             throw new IllegalStateException("bad size");
         }
     }
 
     @Benchmark
-    public Set<String> availableIndexFolderNaive() throws IOException {
-        return nodeEnv.availableIndexFoldersForPath(dataPath);
+    public final Set<String> availableIndexFolderNaive() throws IOException {
+        return this.nodeEnv.availableIndexFoldersForPath(this.dataPath);
     }
 
     @Benchmark
-    public Set<String> availableIndexFolderOptimized() throws IOException {
-        return nodeEnv.availableIndexFoldersForPath(dataPath, excludedDirs::contains);
+    public final Set<String> availableIndexFolderOptimized() throws IOException {
+        return this.nodeEnv.availableIndexFoldersForPath(this.dataPath, this.excludedDirs::contains);
     }
 
 }

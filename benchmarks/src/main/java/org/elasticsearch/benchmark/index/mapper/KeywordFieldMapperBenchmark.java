@@ -28,7 +28,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Fork(value = 1)
+@Fork(1)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5)
 @BenchmarkMode(Mode.AverageTime)
@@ -42,7 +42,7 @@ public class KeywordFieldMapperBenchmark {
 
     @Setup
     public void setUp() {
-        this.mapperService = MapperServiceFactory.create("""
+        mapperService = MapperServiceFactory.create("""
             {
               "_doc": {
                 "dynamic": false,
@@ -94,7 +94,7 @@ public class KeywordFieldMapperBenchmark {
               }
             }
                        \s""");
-        this.sourceToParse = new SourceToParse(UUIDs.randomBase64UUID(), new BytesArray("""
+        sourceToParse = new SourceToParse(UUIDs.randomBase64UUID(), new BytesArray("""
             {
               "host": "some_value",
               "name": "some_other_thing",
@@ -112,6 +112,6 @@ public class KeywordFieldMapperBenchmark {
 
     @Benchmark
     public List<LuceneDocument> benchmarkParseKeywordFields() {
-        return mapperService.documentMapper().parse(sourceToParse).docs();
+        return this.mapperService.documentMapper().parse(this.sourceToParse).docs();
     }
 }

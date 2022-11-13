@@ -34,7 +34,7 @@ import java.util.zip.GZIPInputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@Fork(value = 1)
+@Fork(1)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5)
 @BenchmarkMode(Mode.AverageTime)
@@ -42,7 +42,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @State(Scope.Benchmark)
 public class BeatsMapperBenchmark {
 
-    @Param({ "1600172297" })
+    @Param("1600172297")
     private long seed;
 
     private Random random;
@@ -51,27 +51,27 @@ public class BeatsMapperBenchmark {
 
     @Setup
     public void setUp() throws IOException {
-        this.random = new Random(seed);
-        this.mapperService = MapperServiceFactory.create(readSampleMapping());
-        this.sources = generateRandomDocuments(10_000);
+        random = new Random(this.seed);
+        mapperService = MapperServiceFactory.create(BeatsMapperBenchmark.readSampleMapping());
+        sources = this.generateRandomDocuments(10_000);
     }
 
     private static String readSampleMapping() throws IOException {
         // Uncompressed mapping is around 1mb and 29k lines.
         // It is unlikely that it will be modified so keeping the compressed version instead to minimize the repo size.
-        return readCompressedMapping("filebeat-mapping-8.1.2.json.gz");
+        return BeatsMapperBenchmark.readCompressedMapping("filebeat-mapping-8.1.2.json.gz");
     }
 
-    private static String readCompressedMapping(String resource) throws IOException {
-        try (var in = new GZIPInputStream(BeatsMapperBenchmark.class.getResourceAsStream(resource))) {
+    private static String readCompressedMapping(final String resource) throws IOException {
+        try (final var in = new GZIPInputStream(BeatsMapperBenchmark.class.getResourceAsStream(resource))) {
             return new String(in.readAllBytes(), UTF_8);
         }
     }
 
-    private SourceToParse[] generateRandomDocuments(int count) {
-        var docs = new SourceToParse[count];
+    private SourceToParse[] generateRandomDocuments(final int count) {
+        final var docs = new SourceToParse[count];
         for (int i = 0; i < count; i++) {
-            docs[i] = generateRandomDocument();
+            docs[i] = this.generateRandomDocument();
         }
         return docs;
     }
@@ -83,27 +83,27 @@ public class BeatsMapperBenchmark {
                 "{    \"@timestamp\": "
                     + System.currentTimeMillis()
                     + ",    \"log.file.path\": \""
-                    + randomFrom("logs-1.log", "logs-2.log", "logs-3.log")
+                    + this.randomFrom("logs-1.log", "logs-2.log", "logs-3.log")
                     + "\",    \"log.level\": \""
                     + "INFO"
                     + "\",    \"log.logger\": \""
                     + "some.package.for.logging.requests"
                     + "\",    \"client.ip\": \""
-                    + randomIp()
+                    + this.randomIp()
                     + "\",    \"http.request.method\": \""
-                    + randomFrom("GET", "POST")
+                    + this.randomFrom("GET", "POST")
                     + "\",    \"http.request.id\": \""
-                    + random.nextInt()
+                    + this.random.nextInt()
                     + "\",    \"http.request.bytes\": "
-                    + random.nextInt(1024)
+                    + this.random.nextInt(1024)
                     + ",    \"url.path\": \""
-                    + randomString(1024)
+                    + this.randomString(1024)
                     + "\",    \"http.response.status_code\": "
-                    + randomFrom(200, 204, 300, 404, 500)
+                    + this.randomFrom(200, 204, 300, 404, 500)
                     + ",    \"http.response.bytes\": "
-                    + random.nextInt(1024)
+                    + this.random.nextInt(1024)
                     + ",    \"http.response.mime_type\": \""
-                    + randomFrom("application/json", "application/xml")
+                    + this.randomFrom("application/json", "application/xml")
                     + "\"}"
             ),
             XContentType.JSON
@@ -111,26 +111,26 @@ public class BeatsMapperBenchmark {
     }
 
     private String randomIp() {
-        return "" + random.nextInt(255) + '.' + random.nextInt(255) + '.' + random.nextInt(255) + '.' + random.nextInt(255);
+        return String.valueOf(this.random.nextInt(255)) + '.' + this.random.nextInt(255) + '.' + this.random.nextInt(255) + '.' + this.random.nextInt(255);
     }
 
-    private String randomString(int maxLength) {
-        var length = random.nextInt(maxLength);
-        var builder = new StringBuilder(length);
+    private String randomString(final int maxLength) {
+        final var length = this.random.nextInt(maxLength);
+        final var builder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            builder.append((byte) (32 + random.nextInt(94)));
+            builder.append((byte) (32 + this.random.nextInt(94)));
         }
         return builder.toString();
     }
 
     @SafeVarargs
     @SuppressWarnings("varargs")
-    private <T> T randomFrom(T... items) {
-        return items[random.nextInt(items.length)];
+    private <T> T randomFrom(final T... items) {
+        return items[this.random.nextInt(items.length)];
     }
 
     @Benchmark
     public List<LuceneDocument> benchmarkParseKeywordFields() {
-        return mapperService.documentMapper().parse(randomFrom(sources)).docs();
+        return this.mapperService.documentMapper().parse(this.randomFrom(this.sources)).docs();
     }
 }

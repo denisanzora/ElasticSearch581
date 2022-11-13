@@ -31,36 +31,37 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-@Fork(value = 1)
+@Fork(1)
 public class PagedBytesReferenceReadVIntBenchmark {
 
-    @Param(value = { "10000000" })
+    public static final String EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW = "expected PagedBytesReference but saw";
+    @Param("10000000")
     int entries;
 
     private StreamInput streamInput;
 
     @Setup
     public void initResults() throws IOException {
-        final BytesStreamOutput tmp = new BytesStreamOutput();
-        for (int i = 0; i < entries / 2; i++) {
+        BytesStreamOutput tmp = new BytesStreamOutput();
+        for (int i = 0; i < this.entries / 2; i++) {
             tmp.writeVInt(i);
         }
-        for (int i = 0; i < entries / 2; i++) {
+        for (int i = 0; i < this.entries / 2; i++) {
             tmp.writeVInt(Integer.MAX_VALUE - i);
         }
-        BytesReference pagedBytes = tmp.bytes();
-        if (pagedBytes instanceof PagedBytesReference == false) {
-            throw new AssertionError("expected PagedBytesReference but saw [" + pagedBytes.getClass() + "]");
+        final BytesReference pagedBytes = tmp.bytes();
+        if (!(pagedBytes instanceof PagedBytesReference)) {
+            throw new AssertionError(EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" + pagedBytes.getClass() + "]");
         }
-        this.streamInput = pagedBytes.streamInput();
+        streamInput = pagedBytes.streamInput();
     }
 
     @Benchmark
     public int readVInt() throws IOException {
         int res = 0;
-        streamInput.reset();
-        for (int i = 0; i < entries; i++) {
-            res = res ^ streamInput.readVInt();
+        this.streamInput.reset();
+        for (int i = 0; i < this.entries; i++) {
+            res = res ^ this.streamInput.readVInt();
         }
         return res;
     }

@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-@Fork(value = 1)
+@Fork(1)
 public class BytesArrayReadLongBenchmark {
 
-    @Param(value = { "1" })
+    @Param("1")
     private int dataMb;
 
     private BytesReference bytesArray;
@@ -45,25 +45,25 @@ public class BytesArrayReadLongBenchmark {
 
     @Setup
     public void initResults() throws IOException {
-        final BytesStreamOutput tmp = new BytesStreamOutput();
-        final long bytes = new ByteSizeValue(dataMb, ByteSizeUnit.MB).getBytes();
+        BytesStreamOutput tmp = new BytesStreamOutput();
+        long bytes = new ByteSizeValue(this.dataMb, ByteSizeUnit.MB).getBytes();
         for (int i = 0; i < bytes / 8; i++) {
             tmp.writeLong(i);
         }
-        bytesArray = tmp.copyBytes();
-        if (bytesArray instanceof BytesArray == false) {
-            throw new AssertionError("expected BytesArray but saw [" + bytesArray.getClass() + "]");
+        this.bytesArray = tmp.copyBytes();
+        if (!(bytesArray instanceof BytesArray)) {
+            throw new AssertionError(BytesArrayReadVLongBenchmark.EXPECTED_BYTES_ARRAY_BUT_SAW + "[" + this.bytesArray.getClass() + "]");
         }
-        streamInput = bytesArray.streamInput();
+        this.streamInput = this.bytesArray.streamInput();
     }
 
     @Benchmark
-    public long readLong() throws IOException {
+    public final long readLong() throws IOException {
         long res = 0L;
-        streamInput.reset();
-        final int reads = bytesArray.length() / 8;
+        this.streamInput.reset();
+        int reads = this.bytesArray.length() / 8;
         for (int i = 0; i < reads; i++) {
-            res = res ^ streamInput.readLong();
+            res = res ^ this.streamInput.readLong();
         }
         return res;
     }

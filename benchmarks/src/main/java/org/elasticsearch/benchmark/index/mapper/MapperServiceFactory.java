@@ -36,21 +36,22 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Map;
 
-public class MapperServiceFactory {
+public enum MapperServiceFactory {
+    ;
 
-    public static MapperService create(String mappings) {
-        Settings settings = Settings.builder()
+    public static MapperService create(final String mappings) {
+        final Settings settings = Settings.builder()
             .put("index.number_of_replicas", 0)
             .put("index.number_of_shards", 1)
             .put("index.version.created", Version.CURRENT)
             .put("index.mapping.total_fields.limit", 10000)
             .build();
-        IndexMetadata meta = IndexMetadata.builder("index").settings(settings).build();
-        IndexSettings indexSettings = new IndexSettings(meta, settings);
-        MapperRegistry mapperRegistry = new IndicesModule(Collections.emptyList()).getMapperRegistry();
+        final IndexMetadata meta = IndexMetadata.builder("index").settings(settings).build();
+        final IndexSettings indexSettings = new IndexSettings(meta, settings);
+        final MapperRegistry mapperRegistry = new IndicesModule(Collections.emptyList()).getMapperRegistry();
 
-        SimilarityService similarityService = new SimilarityService(indexSettings, null, Map.of());
-        MapperService mapperService = new MapperService(
+        final SimilarityService similarityService = new SimilarityService(indexSettings, null, Map.of());
+        final MapperService mapperService = new MapperService(
             indexSettings,
             new IndexAnalyzers(
                 Map.of("default", new NamedAnalyzer("default", AnalyzerScope.INDEX, new StandardAnalyzer())),
@@ -65,7 +66,7 @@ public class MapperServiceFactory {
             new ProvidedIdFieldMapper(() -> true),
             new ScriptCompiler() {
                 @Override
-                public <T> T compile(Script script, ScriptContext<T> scriptContext) {
+                public <T> T compile(final Script script, final ScriptContext<T> scriptContext) {
                     throw new UnsupportedOperationException();
                 }
             }
@@ -74,7 +75,7 @@ public class MapperServiceFactory {
         try {
             mapperService.merge("_doc", new CompressedXContent(mappings), MapperService.MergeReason.MAPPING_UPDATE);
             return mapperService;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }

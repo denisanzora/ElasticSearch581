@@ -23,14 +23,15 @@ because we have no control over the JVM running the benchmarks.
 If you want to run a specific benchmark class like, say,
 `MemoryStatsBenchmark`, you can use `--args`:
 
-```
+```gradle
 gradlew -p benchmarks run --args 'MemoryStatsBenchmark'
 ```
 
 Everything in the `'` gets sent on the command line to JMH.
 
 You can set benchmark parameters with `-p`:
-```
+
+```gradle
 gradlew -p benchmarks/ run --args 'RoundingBenchmark.round -prounder=es -prange="2000-10-01 to 2000-11-01" -pzone=America/New_York -pinterval=10d -pcount=1000000'
 ```
 
@@ -38,10 +39,10 @@ The benchmark code defines default values for the parameters, so if
 you leave any out JMH will run with each default value, one after
 the other. This will run with `interval` set to `calendar year` then
 `calendar hour` then `10d` then `5d` then `1h`:
-```
+
+```gradle
 gradlew -p benchmarks/ run --args 'RoundingBenchmark.round -prounder=es -prange="2000-10-01 to 2000-11-01" -pzone=America/New_York -pcount=1000000'
 ```
-
 
 ## Adding Microbenchmarks
 
@@ -66,7 +67,7 @@ To get realistic results, you should exercise care when running benchmarks. Here
 * Vary the problem input size with `@Param`.
 * Use the integrated profilers in JMH to dig deeper if benchmark results do not match your hypotheses:
     * Add `-prof gc` to the options to check whether the garbage collector runs during a microbenchmark and skews
-   your results. If so, try to force a GC between runs (`-gc true`) but watch out for the caveats.
+      your results. If so, try to force a GC between runs (`-gc true`) but watch out for the caveats.
     * Add `-prof perf` or `-prof perfasm` (both only available on Linux, see Disassembling below) to see hotspots.
     * Add `-prof async` to see hotspots.
 * Have your benchmarks peer-reviewed.
@@ -85,7 +86,7 @@ Disassembling is fun! Maybe not always useful, but always fun! Generally, you'll
 `perf` is generally available via `apg-get install perf` or `pacman -S perf`. FCML is a little more involved. This worked
 on 2020-08-01:
 
-```
+```text
 wget https://github.com/swojtasiak/fcml-lib/releases/download/v1.2.2/fcml-1.2.2.tar.gz
 tar xf fcml*
 cd fcml*
@@ -98,7 +99,7 @@ sudo cp .libs/libhsdis.so.0.0.0 /usr/lib/jvm/java-14-adoptopenjdk/lib/hsdis-amd6
 
 If you want to disassemble a single method do something like this:
 
-```
+```gradle
 gradlew -p benchmarks run --args ' MemoryStatsBenchmark -jvmArgs "-XX:+UnlockDiagnosticVMOptions -XX:CompileCommand=print,*.yourMethodName -XX:PrintAssemblyOptions=intel"
 ```
 
@@ -115,16 +116,18 @@ The async profiler is neat because it does not suffer from the safepoint
 bias problem. And because it makes pretty flame graphs!
 
 Let user processes read performance stuff:
-```
+
+```bash
 sudo bash
 echo 0 > /proc/sys/kernel/kptr_restrict
 echo 1 > /proc/sys/kernel/perf_event_paranoid
 exit
 ```
 
-Grab the async profiler from https://github.com/jvm-profiling-tools/async-profiler
+Grab the async profiler from <https://github.com/jvm-profiling-tools/async-profiler>
 and run `prof async` like so:
-```
+
+```gradle
 gradlew -p benchmarks/ run --args 'LongKeyedBucketOrdsBenchmark.multiBucket -prof "async:libPath=/home/nik9000/Downloads/tmp/async-profiler-1.8.3-linux-x64/build/libasyncProfiler.so;dir=/tmp/prof;output=flamegraph"'
 ```
 

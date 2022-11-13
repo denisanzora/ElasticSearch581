@@ -31,36 +31,37 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-@Fork(value = 1)
+@Fork(1)
 public class BytesArrayReadVLongBenchmark {
 
-    @Param(value = { "10000000" })
+    public static final String EXPECTED_BYTES_ARRAY_BUT_SAW = "expected BytesArray but saw";
+    @Param("10000000")
     int entries;
 
     private StreamInput streamInput;
 
     @Setup
     public void initResults() throws IOException {
-        final BytesStreamOutput tmp = new BytesStreamOutput();
-        for (int i = 0; i < entries / 2; i++) {
+        BytesStreamOutput tmp = new BytesStreamOutput();
+        for (int i = 0; i < this.entries / 2; i++) {
             tmp.writeVLong(i);
         }
-        for (int i = 0; i < entries / 2; i++) {
+        for (int i = 0; i < this.entries / 2; i++) {
             tmp.writeVLong(Long.MAX_VALUE - i);
         }
-        BytesReference bytesArray = tmp.copyBytes();
-        if (bytesArray instanceof BytesArray == false) {
-            throw new AssertionError("expected BytesArray but saw [" + bytesArray.getClass() + "]");
+        final BytesReference bytesArray = tmp.copyBytes();
+        if (!(bytesArray instanceof BytesArray)) {
+            throw new AssertionError(EXPECTED_BYTES_ARRAY_BUT_SAW + "[" + bytesArray.getClass() + "]");
         }
-        this.streamInput = bytesArray.streamInput();
+        streamInput = bytesArray.streamInput();
     }
 
     @Benchmark
     public long readVLong() throws IOException {
         long res = 0;
-        streamInput.reset();
-        for (int i = 0; i < entries; i++) {
-            res = res ^ streamInput.readVLong();
+        this.streamInput.reset();
+        for (int i = 0; i < this.entries; i++) {
+            res = res ^ this.streamInput.readVLong();
         }
         return res;
     }

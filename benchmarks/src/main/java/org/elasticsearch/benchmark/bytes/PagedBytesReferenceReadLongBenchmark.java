@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-@Fork(value = 1)
+@Fork(1)
 public class PagedBytesReferenceReadLongBenchmark {
 
-    @Param(value = { "1" })
+    @Param("1")
     private int dataMb;
 
     private BytesReference pagedBytes;
@@ -45,25 +45,25 @@ public class PagedBytesReferenceReadLongBenchmark {
 
     @Setup
     public void initResults() throws IOException {
-        final BytesStreamOutput tmp = new BytesStreamOutput();
-        final long bytes = new ByteSizeValue(dataMb, ByteSizeUnit.MB).getBytes();
+        BytesStreamOutput tmp = new BytesStreamOutput();
+        long bytes = new ByteSizeValue(this.dataMb, ByteSizeUnit.MB).getBytes();
         for (int i = 0; i < bytes / 8; i++) {
             tmp.writeLong(i);
         }
-        pagedBytes = tmp.bytes();
-        if (pagedBytes instanceof PagedBytesReference == false) {
-            throw new AssertionError("expected PagedBytesReference but saw [" + pagedBytes.getClass() + "]");
+        this.pagedBytes = tmp.bytes();
+        if (!(pagedBytes instanceof PagedBytesReference)) {
+            throw new AssertionError(PagedBytesReferenceReadVIntBenchmark.EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" +  this.pagedBytes.getClass() + "]");
         }
-        this.streamInput = pagedBytes.streamInput();
+        streamInput = this.pagedBytes.streamInput();
     }
 
     @Benchmark
     public long readLong() throws IOException {
         long res = 0L;
-        streamInput.reset();
-        final int reads = pagedBytes.length() / 8;
+        this.streamInput.reset();
+        int reads = this.pagedBytes.length() / 8;
         for (int i = 0; i < reads; i++) {
-            res = res ^ streamInput.readLong();
+            res = res ^ this.streamInput.readLong();
         }
         return res;
     }

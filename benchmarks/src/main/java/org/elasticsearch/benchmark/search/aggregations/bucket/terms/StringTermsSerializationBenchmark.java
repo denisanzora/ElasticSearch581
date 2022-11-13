@@ -42,31 +42,31 @@ public class StringTermsSerializationBenchmark {
     private static final NamedWriteableRegistry REGISTRY = new NamedWriteableRegistry(
         List.of(new NamedWriteableRegistry.Entry(InternalAggregation.class, StringTerms.NAME, StringTerms::new))
     );
-    @Param(value = { "1000" })
-    private int buckets;
+    @Param("1000")
+    private int buckets = 0;
 
-    private DelayableWriteable<InternalAggregations> results;
+    private DelayableWriteable<InternalAggregations> results = null;
 
     @Setup
     public void initResults() {
-        results = DelayableWriteable.referencing(InternalAggregations.from(List.of(newTerms(true))));
+        this.results = DelayableWriteable.referencing(InternalAggregations.from(List.of(this.newTerms(true))));
     }
 
-    private StringTerms newTerms(boolean withNested) {
-        List<StringTerms.Bucket> resultBuckets = new ArrayList<>(buckets);
-        for (int i = 0; i < buckets; i++) {
-            InternalAggregations inner = withNested ? InternalAggregations.from(List.of(newTerms(false))) : InternalAggregations.EMPTY;
+    private StringTerms newTerms(final boolean withNested) {
+        final List<StringTerms.Bucket> resultBuckets = new ArrayList<>(this.buckets);
+        for (int i = 0; i < this.buckets; i++) {
+            final InternalAggregations inner = withNested ? InternalAggregations.from(List.of(this.newTerms(false))) : InternalAggregations.EMPTY;
             resultBuckets.add(new StringTerms.Bucket(new BytesRef("test" + i), i, inner, false, 0, DocValueFormat.RAW));
         }
         return new StringTerms(
             "test",
             BucketOrder.key(true),
             BucketOrder.key(true),
-            buckets,
+                this.buckets,
             1,
             null,
             DocValueFormat.RAW,
-            buckets,
+                this.buckets,
             false,
             100000,
             resultBuckets,
@@ -76,6 +76,6 @@ public class StringTermsSerializationBenchmark {
 
     @Benchmark
     public DelayableWriteable<InternalAggregations> serialize() {
-        return results.asSerialized(InternalAggregations::readFrom, REGISTRY);
+        return this.results.asSerialized(InternalAggregations::readFrom, StringTermsSerializationBenchmark.REGISTRY);
     }
 }
