@@ -14,16 +14,16 @@ public abstract class AbstractLazyPropertyCollection {
     final String name;
     final Object owner;
 
-    public AbstractLazyPropertyCollection(String name) {
+    protected AbstractLazyPropertyCollection(String name) {
         this(name, null);
     }
 
-    public AbstractLazyPropertyCollection(String name, Object owner) {
+    protected AbstractLazyPropertyCollection(String name, Object owner) {
         this.name = name;
         this.owner = owner;
     }
 
-    public abstract List<? extends Object> getNormalizedCollection();
+    public abstract List<Object> getNormalizedCollection();
 
     void assertNotNull(Object value, String description) {
         if (value == null) {

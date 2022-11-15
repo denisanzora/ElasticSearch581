@@ -23,7 +23,7 @@ public class CompileOnlyResolvePlugin implements Plugin<Project> {
             if (configuration.getName().equals(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME)) {
                 NamedDomainObjectProvider<Configuration> resolvableCompileOnly = project.getConfigurations()
                     .register(RESOLVEABLE_COMPILE_ONLY_CONFIGURATION_NAME);
-                resolvableCompileOnly.configure((c) -> {
+                resolvableCompileOnly.configure(c -> {
                     c.setCanBeResolved(true);
                     c.setCanBeConsumed(false);
                     c.extendsFrom(configuration);
