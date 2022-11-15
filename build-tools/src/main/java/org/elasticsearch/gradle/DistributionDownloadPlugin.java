@@ -23,6 +23,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 
 import java.util.Comparator;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -43,10 +44,9 @@ public class DistributionDownloadPlugin implements Plugin<Project> {
     private static final String SNAPSHOT_REPO_NAME = "elasticsearch-snapshots";
     public static final String DISTRO_EXTRACTED_CONFIG_PREFIX = "es_distro_extracted_";
 
-    private NamedDomainObjectContainer<ElasticsearchDistribution> distributionsContainer;
     private NamedDomainObjectContainer<DistributionResolution> distributionsResolutionStrategiesContainer;
 
-    private Property<Boolean> dockerAvailability;
+    private final Property<Boolean> dockerAvailability;
 
     @Inject
     public DistributionDownloadPlugin(ObjectFactory objectFactory) {
@@ -75,7 +75,8 @@ public class DistributionDownloadPlugin implements Plugin<Project> {
         setupDownloadServiceRepo(project);
     }
 
-    private void setupDistributionContainer(Project project, Property<Boolean> dockerAvailable) {
+    private void setupDistributionContainer(Project project, Property<Boolean> dockerAvailability) {
+        NamedDomainObjectContainer<ElasticsearchDistribution> distributionsContainer;
         distributionsContainer = project.container(ElasticsearchDistribution.class, name -> {
             Configuration fileConfiguration = project.getConfigurations().create("es_distro_file_" + name);
             Configuration extractedConfiguration = project.getConfigurations().create(DISTRO_EXTRACTED_CONFIG_PREFIX + name);
@@ -87,7 +88,7 @@ public class DistributionDownloadPlugin implements Plugin<Project> {
                 dockerAvailability,
                 fileConfiguration,
                 extractedConfiguration,
-                (dist) -> finalizeDistributionDependencies(project, dist)
+                dist -> finalizeDistributionDependencies(project, dist)
             );
         });
         project.getExtensions().add(CONTAINER_NAME, distributionsContainer);
@@ -129,7 +130,7 @@ public class DistributionDownloadPlugin implements Plugin<Project> {
         return distributionsResolutionStrategiesContainer.stream()
             .sorted(Comparator.comparingInt(DistributionResolution::getPriority))
             .map(r -> r.getResolver().resolve(p, distribution))
-            .filter(d -> d != null)
+            .filter(Objects::nonNull)
             .findFirst()
             .orElseGet(() -> DistributionDependency.of(dependencyNotation(distribution)));
     }
