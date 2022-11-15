@@ -26,8 +26,8 @@ import java.util.Map;
  * A Gradle runner that delegates to another runner, optionally enabling the configuring cache parameter.
  */
 public class ConfigurationCacheCompatibleAwareGradleRunner extends GradleRunner {
-    private GradleRunner delegate;
-    private boolean ccCompatible;
+    private final GradleRunner delegate;
+    private final boolean ccCompatible;
 
     public ConfigurationCacheCompatibleAwareGradleRunner(GradleRunner delegate, boolean ccCompatible) {
         this.delegate = delegate;
@@ -138,8 +138,7 @@ public class ConfigurationCacheCompatibleAwareGradleRunner extends GradleRunner 
 
     @Override
     public GradleRunner forwardStdError(Writer writer) {
-        delegate.forwardStdOutput(writer);
-        return this;
+        return forwardStdOutput(writer);
     }
 
     @Override

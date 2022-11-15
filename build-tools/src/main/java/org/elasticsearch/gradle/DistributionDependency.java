@@ -30,8 +30,6 @@ public interface DistributionDependency {
         }
 
         @Override
-        public Object getExtractedNotation() {
-            return notation;
-        }
+        public Object getExtractedNotation() { return getDefaultNotation(); }
     }
 }
