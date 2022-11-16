@@ -52,63 +52,63 @@ public class RoundingBenchmark {
     public String rounder;
 
     @Param({ "UTC", "America/New_York" })
-    public String zone = null;
+    public String zone;
 
     @Param({ "calendar year", "calendar hour", "10d", "5d", "1h" })
-    public String interval = null;
+    public String interval;
 
     @Param({ "1", "10000", "1000000", "100000000" })
-    public int count = 0;
+    public int count;
 
-    private long min = 0L;
-    private long max = 0L;
-    private long[] dates = null;
-    private Supplier<Rounding.Prepared> rounderBuilder = null;
+    private long min;
+    private long max;
+    private long[] dates;
+    private Supplier<Rounding.Prepared> rounderBuilder;
 
     @Setup
     public void buildDates() {
-        final String[] r = this.range.split(" to ");
-        this.min = RoundingBenchmark.FORMATTER.parseMillis(r[0]);
-        this.max = RoundingBenchmark.FORMATTER.parseMillis(r[1]);
-        this.dates = new long[this.count];
-        long date = this.min;
-        final long diff = (this.max - this.min) / this.dates.length;
-        for (int i = 0; i < this.dates.length; i++) {
-            if (date >= this.max) {
+        String[] r = range.split(" to ");
+        min = FORMATTER.parseMillis(r[0]);
+        max = FORMATTER.parseMillis(r[1]);
+        dates = new long[count];
+        long date = min;
+        long diff = (max - min) / dates.length;
+        for (int i = 0; i < dates.length; i++) {
+            if (date >= max) {
                 throw new IllegalStateException("made a bad date [" + date + "]");
             }
-            this.dates[i] = date;
+            dates[i] = date;
             date += diff;
         }
-        final Rounding.Builder roundingBuilder;
-        if (this.interval.startsWith("calendar ")) {
+        Rounding.Builder roundingBuilder;
+        if (interval.startsWith("calendar ")) {
             roundingBuilder = Rounding.builder(
-                DateHistogramAggregationBuilder.DATE_FIELD_UNITS.get(this.interval.substring("calendar ".length()))
+                DateHistogramAggregationBuilder.DATE_FIELD_UNITS.get(interval.substring("calendar ".length()))
             );
         } else {
-            roundingBuilder = Rounding.builder(TimeValue.parseTimeValue(this.interval, "interval"));
+            roundingBuilder = Rounding.builder(TimeValue.parseTimeValue(interval, "interval"));
         }
-        final Rounding rounding = roundingBuilder.timeZone(ZoneId.of(this.zone)).build();
-        this.rounderBuilder = switch (this.rounder) {
+        Rounding rounding = roundingBuilder.timeZone(ZoneId.of(zone)).build();
+        rounderBuilder = switch (rounder) {
             case "java time" -> rounding::prepareJavaTime;
-            case "es" -> () -> rounding.prepare(this.min, this.max);
+            case "es" -> () -> rounding.prepare(min, max);
             default -> throw new IllegalArgumentException("Expected rounder to be [java time] or [es]");
         };
     }
 
     @Benchmark
-    public final void round(final Blackhole bh) {
-        final Rounding.Prepared rounder = this.rounderBuilder.get();
-        for (int i = 0; i < this.dates.length; i++) {
-            bh.consume(rounder.round(this.dates[i]));
+    public final void round(Blackhole bh) {
+        Rounding.Prepared rounder = rounderBuilder.get();
+        for (int i = 0; i < dates.length; i++) {
+            bh.consume(rounder.round(dates[i]));
         }
     }
 
     @Benchmark
-    public final void nextRoundingValue(final Blackhole bh) {
-        final Rounding.Prepared rounder = this.rounderBuilder.get();
-        for (int i = 0; i < this.dates.length; i++) {
-            bh.consume(rounder.nextRoundingValue(this.dates[i]));
+    public final void nextRoundingValue(Blackhole bh) {
+        Rounding.Prepared rounder = rounderBuilder.get();
+        for (int i = 0; i < dates.length; i++) {
+            bh.consume(rounder.nextRoundingValue(dates[i]));
         }
     }
 }

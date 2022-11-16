@@ -77,7 +77,7 @@ public class ScriptScoreBenchmark {
         null,
         Path.of(System.getProperty("plugins.dir"))
     );
-    private final ScriptModule scriptModule = new ScriptModule(Settings.EMPTY, this.pluginsService.filterPlugins(ScriptPlugin.class));
+    private final ScriptModule scriptModule = new ScriptModule(Settings.EMPTY, pluginsService.filterPlugins(ScriptPlugin.class));
 
     private final Map<String, MappedFieldType> fieldTypes = Map.ofEntries(
         Map.entry("n", new NumberFieldMapper.NumberFieldType("n", NumberFieldMapper.NumberType.LONG, false, false, true, true, null, Map.of(), null, false, null))
@@ -86,8 +86,8 @@ public class ScriptScoreBenchmark {
     private final Map<String, Set<String>> sourcePaths = Map.of("n", Set.of("n"));
     private final CircuitBreakerService breakerService = new NoneCircuitBreakerService();
     private final SearchLookup lookup = new SearchLookup(
-        this.fieldTypes::get,
-        (mft, lookup, fdo) -> mft.fielddataBuilder(FieldDataContext.noRuntimeFields("benchmark")).build(this.fieldDataCache, this.breakerService),
+        fieldTypes::get,
+        (mft, lookup, fdo) -> mft.fielddataBuilder(FieldDataContext.noRuntimeFields("benchmark")).build(fieldDataCache, breakerService),
         new SourceLookup.ReaderSourceProvider()
     );
 
@@ -103,30 +103,30 @@ public class ScriptScoreBenchmark {
 
     @Setup
     public void setupScript() {
-        this.factory = switch (this.script) {
-            case "expression" -> this.scriptModule.engines.get("expression").compile("test", "doc['n'].value", ScoreScript.CONTEXT, Map.of());
-            case "metal" -> this.bareMetalScript();
-            case "painless_cast" -> this.scriptModule.engines.get("painless")
+        factory = switch (script) {
+            case "expression" -> scriptModule.engines.get("expression").compile("test", "doc['n'].value", ScoreScript.CONTEXT, Map.of());
+            case "metal" -> bareMetalScript();
+            case "painless_cast" -> scriptModule.engines.get("painless")
                 .compile(
                     "test",
                     "((org.elasticsearch.index.fielddata.ScriptDocValues.Longs)doc['n']).value",
                     ScoreScript.CONTEXT,
                     Map.of()
                 );
-            case "painless_def" -> this.scriptModule.engines.get("painless").compile("test", "doc['n'].value", ScoreScript.CONTEXT, Map.of());
-            default -> throw new IllegalArgumentException("Don't know how to implement script [" + this.script + "]");
+            case "painless_def" -> scriptModule.engines.get("painless").compile("test", "doc['n'].value", ScoreScript.CONTEXT, Map.of());
+            default -> throw new IllegalArgumentException("Don't know how to implement script [" + script + "]");
         };
     }
 
     @Setup
     public void setupIndex() throws IOException {
-        final Path path = Path.of(System.getProperty("tests.index"));
+        Path path = Path.of(System.getProperty("tests.index"));
         IOUtils.rm(path);
-        final Directory directory = new MMapDirectory(path);
+        Directory directory = new MMapDirectory(path);
         try (
-            final IndexWriter w = new IndexWriter(
+            IndexWriter w = new IndexWriter(
                 directory,
-                new IndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE).setRAMBufferSizeMB(this.indexingBufferMb)
+                new IndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE).setRAMBufferSizeMB(indexingBufferMb)
             )
         ) {
             for (int i = 1; 1_000_000 >= i; i++) {
@@ -134,50 +134,50 @@ public class ScriptScoreBenchmark {
             }
             w.commit();
         }
-        this.reader = DirectoryReader.open(directory);
+        reader = DirectoryReader.open(directory);
     }
 
     @Benchmark
     public TopDocs benchmark() throws IOException {
-        final TopDocs topDocs = new IndexSearcher(this.reader).search(this.scriptScoreQuery(this.factory), 10);
+        TopDocs topDocs = new IndexSearcher(reader).search(scriptScoreQuery(factory), 10);
         if (1_000_000 != topDocs.scoreDocs[0].score) {
             throw new AssertionError("Expected score to be 1,000,000 but was [" + topDocs.scoreDocs[0].score + "]");
         }
         return topDocs;
     }
 
-    private Query scriptScoreQuery(final ScoreScript.Factory factory) {
-        final ScoreScript.LeafFactory leafFactory = factory.newFactory(Map.of(), this.lookup);
-        return new ScriptScoreQuery(new MatchAllDocsQuery(), null, leafFactory, this.lookup, null, "test", 0, Version.CURRENT);
+    private Query scriptScoreQuery(ScoreScript.Factory factory) {
+        ScoreScript.LeafFactory leafFactory = factory.newFactory(Map.of(), lookup);
+        return new ScriptScoreQuery(new MatchAllDocsQuery(), null, leafFactory, lookup, null, "test", 0, Version.CURRENT);
     }
 
     private ScoreScript.Factory bareMetalScript() {
         return (params, lookup) -> {
-            final MappedFieldType type = this.fieldTypes.get("n");
-            final IndexNumericFieldData ifd = (IndexNumericFieldData) lookup.getForField(type, MappedFieldType.FielddataOperation.SEARCH);
+            MappedFieldType type = fieldTypes.get("n");
+            IndexNumericFieldData ifd = (IndexNumericFieldData) lookup.getForField(type, MappedFieldType.FielddataOperation.SEARCH);
             return new ScoreScript.LeafFactory() {
                 @Override
-                public ScoreScript newInstance(final DocReader docReader) throws IOException {
-                    final SortedNumericDocValues values = ifd.load(((DocValuesDocReader) docReader).getLeafReaderContext()).getLongValues();
+                public ScoreScript newInstance(DocReader docReader) throws IOException {
+                    SortedNumericDocValues values = ifd.load(((DocValuesDocReader) docReader).getLeafReaderContext()).getLongValues();
                     return new ScoreScript(params, null, docReader) {
                         private int docId;
 
                         @Override
-                        public double execute(final ExplanationHolder explanation) {
+                        public double execute(ExplanationHolder explanation) {
                             try {
-                                values.advance(this.docId);
+                                values.advance(docId);
                                 if (1 != values.docValueCount()) {
                                     throw new IllegalArgumentException("script only works when there is exactly one value");
                                 }
                                 return values.nextValue();
-                            } catch (final IOException e) {
+                            } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
                         }
 
                         @Override
-                        public void setDocument(final int docid) {
-                            docId = docid;
+                        public void setDocument(int docid) {
+                            this.docId = docid;
                         }
                     };
                 }

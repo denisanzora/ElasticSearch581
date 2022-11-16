@@ -45,25 +45,25 @@ public class PagedBytesReferenceReadLongBenchmark {
 
     @Setup
     public void initResults() throws IOException {
-        BytesStreamOutput tmp = new BytesStreamOutput();
-        long bytes = new ByteSizeValue(this.dataMb, ByteSizeUnit.MB).getBytes();
+        final BytesStreamOutput tmp = new BytesStreamOutput();
+        final long bytes = new ByteSizeValue(dataMb, ByteSizeUnit.MB).getBytes();
         for (int i = 0; i < bytes / 8; i++) {
             tmp.writeLong(i);
         }
-        this.pagedBytes = tmp.bytes();
-        if (!(pagedBytes instanceof PagedBytesReference)) {
-            throw new AssertionError(PagedBytesReferenceReadVIntBenchmark.EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" +  this.pagedBytes.getClass() + "]");
+        pagedBytes = tmp.bytes();
+        if (!(this.pagedBytes instanceof PagedBytesReference)) {
+            throw new AssertionError(PagedBytesReferenceReadVIntBenchmark.EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" +  pagedBytes.getClass() + "]");
         }
-        streamInput = this.pagedBytes.streamInput();
+        this.streamInput = pagedBytes.streamInput();
     }
 
     @Benchmark
     public long readLong() throws IOException {
         long res = 0L;
-        this.streamInput.reset();
-        int reads = this.pagedBytes.length() / 8;
+        streamInput.reset();
+        final int reads = pagedBytes.length() / 8;
         for (int i = 0; i < reads; i++) {
-            res = res ^ this.streamInput.readLong();
+            res = res ^ streamInput.readLong();
         }
         return res;
     }

@@ -42,7 +42,7 @@ public class KeywordFieldMapperBenchmark {
 
     @Setup
     public void setUp() {
-        mapperService = MapperServiceFactory.create("""
+        this.mapperService = MapperServiceFactory.create("""
             {
               "_doc": {
                 "dynamic": false,
@@ -94,7 +94,7 @@ public class KeywordFieldMapperBenchmark {
               }
             }
                        \s""");
-        sourceToParse = new SourceToParse(UUIDs.randomBase64UUID(), new BytesArray("""
+        this.sourceToParse = new SourceToParse(UUIDs.randomBase64UUID(), new BytesArray("""
             {
               "host": "some_value",
               "name": "some_other_thing",
@@ -112,6 +112,6 @@ public class KeywordFieldMapperBenchmark {
 
     @Benchmark
     public List<LuceneDocument> benchmarkParseKeywordFields() {
-        return this.mapperService.documentMapper().parse(this.sourceToParse).docs();
+        return mapperService.documentMapper().parse(sourceToParse).docs();
     }
 }

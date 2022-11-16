@@ -97,32 +97,32 @@ public class AggConstructionContentionBenchmark {
         }
     );
 
-    private CircuitBreakerService breakerService = null;
-    private BigArrays bigArrays = null;
-    private boolean preallocateBreaker = false;
+    private CircuitBreakerService breakerService;
+    private BigArrays bigArrays;
+    private boolean preallocateBreaker;
 
     @Param({ "noop", "real", "preallocate" })
     private String breaker;
 
     @Setup
     public final void setup() {
-        this.breakerService = switch (this.breaker) {
-            case "real", "preallocate" -> new HierarchyCircuitBreakerService(Settings.EMPTY, List.of(), this.clusterSettings);
+        breakerService = switch (breaker) {
+            case "real", "preallocate" -> new HierarchyCircuitBreakerService(Settings.EMPTY, List.of(), clusterSettings);
             case "noop" -> new NoneCircuitBreakerService();
             default -> throw new UnsupportedOperationException();
         };
-        this.preallocateBreaker = "preallocate".equals(breaker);
-        this.bigArrays = new BigArrays(this.recycler, this.breakerService, "request");
+        preallocateBreaker = "preallocate".equals(this.breaker);
+        bigArrays = new BigArrays(recycler, breakerService, "request");
     }
 
     @Benchmark
     public void sum() throws IOException {
-        buildFactories(new AggregatorFactories.Builder().addAggregator(new SumAggregationBuilder("s").field("int_1")));
+        this.buildFactories(new AggregatorFactories.Builder().addAggregator(new SumAggregationBuilder("s").field("int_1")));
     }
 
     @Benchmark
     public void termsSum() throws IOException {
-        buildFactories(
+        this.buildFactories(
             new AggregatorFactories.Builder().addAggregator(
                 new TermsAggregationBuilder("t").field("int_1").subAggregation(new SumAggregationBuilder("s").field("int_2"))
             )
@@ -131,16 +131,16 @@ public class AggConstructionContentionBenchmark {
 
     @Benchmark
     public final void termsSixtySums() throws IOException {
-        final TermsAggregationBuilder b = new TermsAggregationBuilder("t").field("int_1");
+        TermsAggregationBuilder b = new TermsAggregationBuilder("t").field("int_1");
         for (int i = 0; 60 > i; i++) {
             b.subAggregation(new SumAggregationBuilder("s" + i).field("int_" + i));
         }
-        buildFactories(new AggregatorFactories.Builder().addAggregator(b));
+        this.buildFactories(new AggregatorFactories.Builder().addAggregator(b));
     }
 
-    private void buildFactories(final AggregatorFactories.Builder factories) throws IOException {
-        try (final DummyAggregationContext context = new DummyAggregationContext(factories.bytesToPreallocate())) {
-            AggregatorFactories build = factories.build(context, null);
+    private void buildFactories(AggregatorFactories.Builder factories) throws IOException {
+        try (DummyAggregationContext context = new DummyAggregationContext(factories.bytesToPreallocate())) {
+            final AggregatorFactories build = factories.build(context, null);
             build.createTopLevelAggregators();
         }
     }
@@ -153,30 +153,30 @@ public class AggConstructionContentionBenchmark {
         private final PreallocatedCircuitBreakerService preallocated;
         private final MultiBucketConsumerService.MultiBucketConsumer multiBucketConsumer;
 
-        DummyAggregationContext(final long bytesToPreallocate) {
-            final CircuitBreakerService breakerService;
-            if (AggConstructionContentionBenchmark.this.preallocateBreaker) {
-                breakerService = this.preallocated = new PreallocatedCircuitBreakerService(
+        DummyAggregationContext(long bytesToPreallocate) {
+            CircuitBreakerService circuitBreakerService;
+            if (preallocateBreaker) {
+                circuitBreakerService = preallocated = new PreallocatedCircuitBreakerService(
                     AggConstructionContentionBenchmark.this.breakerService,
                     CircuitBreaker.REQUEST,
                     bytesToPreallocate,
                     "aggregations"
                 );
             } else {
-                breakerService = AggConstructionContentionBenchmark.this.breakerService;
-                this.preallocated = null;
+                circuitBreakerService = AggConstructionContentionBenchmark.this.breakerService;
+                preallocated = null;
             }
-            this.breaker = breakerService.getBreaker(CircuitBreaker.REQUEST);
-            this.multiBucketConsumer = new MultiBucketConsumerService.MultiBucketConsumer(Integer.MAX_VALUE, this.breaker);
+            breaker = circuitBreakerService.getBreaker(CircuitBreaker.REQUEST);
+            multiBucketConsumer = new MultiBucketConsumerService.MultiBucketConsumer(Integer.MAX_VALUE, breaker);
         }
 
         @Override
         public Query query() {
-            return this.query;
+            return query;
         }
 
         @Override
-        public Aggregator profileIfEnabled(final Aggregator agg) throws IOException {
+        public Aggregator profileIfEnabled(Aggregator agg) throws IOException {
             return agg;
         }
 
@@ -191,30 +191,30 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public Analyzer getNamedAnalyzer(String analyzer) {
+        public Analyzer getNamedAnalyzer(final String analyzer) {
             return null;
         }
 
         @Override
         public Analyzer buildCustomAnalyzer(
-            final IndexSettings indexSettings,
-            final boolean normalizer,
-            final NameOrDefinition tokenizer,
-            final List<NameOrDefinition> charFilters,
-            final List<NameOrDefinition> tokenFilters
+            IndexSettings indexSettings,
+            boolean normalizer,
+            NameOrDefinition tokenizer,
+            List<NameOrDefinition> charFilters,
+            List<NameOrDefinition> tokenFilters
         ) {
             return null;
         }
 
         @Override
-        protected IndexFieldData<?> buildFieldData(final MappedFieldType ft) {
-            final IndexFieldDataCache indexFieldDataCache = AggConstructionContentionBenchmark.this.indicesFieldDataCache.buildIndexFieldDataCache(new IndexFieldDataCache.Listener() {
-            }, AggConstructionContentionBenchmark.this.index, ft.name());
-            return ft.fielddataBuilder(FieldDataContext.noRuntimeFields("benchmark")).build(indexFieldDataCache, AggConstructionContentionBenchmark.this.breakerService);
+        protected IndexFieldData<?> buildFieldData(MappedFieldType ft) {
+            IndexFieldDataCache indexFieldDataCache = indicesFieldDataCache.buildIndexFieldDataCache(new IndexFieldDataCache.Listener() {
+            }, index, ft.name());
+            return ft.fielddataBuilder(FieldDataContext.noRuntimeFields("benchmark")).build(indexFieldDataCache, breakerService);
         }
 
         @Override
-        public MappedFieldType getFieldType(final String path) {
+        public MappedFieldType getFieldType(String path) {
             if (path.startsWith("int")) {
                 return new NumberFieldMapper.NumberFieldType(path, NumberFieldMapper.NumberType.INTEGER);
             }
@@ -222,17 +222,17 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public Set<String> getMatchingFieldNames(final String pattern) {
+        public Set<String> getMatchingFieldNames(String pattern) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean isFieldMapped(final String field) {
+        public boolean isFieldMapped(String field) {
             return field.startsWith("int");
         }
 
         @Override
-        public <FactoryType> FactoryType compile(final Script script, final ScriptContext<FactoryType> context) {
+        public <FactoryType> FactoryType compile(Script script, ScriptContext<FactoryType> context) {
             throw new UnsupportedOperationException();
         }
 
@@ -243,12 +243,12 @@ public class AggConstructionContentionBenchmark {
 
         @Override
         public ValuesSourceRegistry getValuesSourceRegistry() {
-            return AggConstructionContentionBenchmark.this.searchModule.getValuesSourceRegistry();
+            return searchModule.getValuesSourceRegistry();
         }
 
         @Override
         public BigArrays bigArrays() {
-            return AggConstructionContentionBenchmark.this.bigArrays;
+            return bigArrays;
         }
 
         @Override
@@ -257,12 +257,12 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public Query buildQuery(final QueryBuilder builder) throws IOException {
+        public Query buildQuery(QueryBuilder builder) throws IOException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Query filterQuery(final Query query) {
+        public Query filterQuery(Query query) {
             throw new UnsupportedOperationException();
         }
 
@@ -272,7 +272,7 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public Optional<SortAndFormats> buildSort(final List<SortBuilder<?>> sortBuilders) throws IOException {
+        public Optional<SortAndFormats> buildSort(List<SortBuilder<?>> sortBuilders) throws IOException {
             throw new UnsupportedOperationException();
         }
 
@@ -292,13 +292,13 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public void addReleasable(final Aggregator aggregator) {
-            this.releaseMe.add(aggregator);
+        public void addReleasable(Aggregator aggregator) {
+            releaseMe.add(aggregator);
         }
 
         @Override
         public MultiBucketConsumerService.MultiBucketConsumer multiBucketConsumer() {
-            return this.multiBucketConsumer;
+            return multiBucketConsumer;
         }
 
         @Override
@@ -307,7 +307,7 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public BucketedSort buildBucketedSort(final SortBuilder<?> sort, final int size, final BucketedSort.ExtraData values) throws IOException {
+        public BucketedSort buildBucketedSort(SortBuilder<?> sort, int size, BucketedSort.ExtraData values) throws IOException {
             throw new UnsupportedOperationException();
         }
 
@@ -328,11 +328,11 @@ public class AggConstructionContentionBenchmark {
 
         @Override
         public CircuitBreaker breaker() {
-            return this.breaker;
+            return breaker;
         }
 
         @Override
-        public Analyzer getIndexAnalyzer(final Function<String, NamedAnalyzer> unindexedFieldAnalyzer) {
+        public Analyzer getIndexAnalyzer(Function<String, NamedAnalyzer> unindexedFieldAnalyzer) {
             throw new UnsupportedOperationException();
         }
 
@@ -352,14 +352,14 @@ public class AggConstructionContentionBenchmark {
         }
 
         @Override
-        public Set<String> sourcePath(final String fullName) {
+        public Set<String> sourcePath(String fullName) {
             return Set.of(fullName);
         }
 
         @Override
         public void close() {
-            final List<Releasable> releaseMe = new ArrayList<>(this.releaseMe);
-            releaseMe.add(this.preallocated);
+            List<Releasable> releaseMe = new ArrayList<>(this.releaseMe);
+            releaseMe.add(preallocated);
             Releasables.close(releaseMe);
         }
     }

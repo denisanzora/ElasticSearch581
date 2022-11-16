@@ -37,20 +37,20 @@ public final class Allocators {
         public static final NoopGatewayAllocator INSTANCE = new NoopGatewayAllocator();
 
         @Override
-        public void applyStartedShards(final List<ShardRouting> startedShards, final RoutingAllocation allocation) {
+        public void applyStartedShards(List<ShardRouting> startedShards, RoutingAllocation allocation) {
             // noop
         }
 
         @Override
-        public void applyFailedShards(final List<FailedShard> failedShards, final RoutingAllocation allocation) {
+        public void applyFailedShards(List<FailedShard> failedShards, RoutingAllocation allocation) {
             // noop
         }
 
         @Override
         public void allocateUnassigned(
-            final ShardRouting shardRouting,
-            final RoutingAllocation allocation,
-            final UnassignedAllocationHandler unassignedAllocationHandler
+            ShardRouting shardRouting,
+            RoutingAllocation allocation,
+            UnassignedAllocationHandler unassignedAllocationHandler
         ) {
             // noop
         }
@@ -60,13 +60,13 @@ public final class Allocators {
         throw new AssertionError("Do not instantiate");
     }
 
-    public static AllocationService createAllocationService(final Settings settings) {
-        return Allocators.createAllocationService(settings, new ClusterSettings(Settings.EMPTY, ClusterSettings.BUILT_IN_CLUSTER_SETTINGS));
+    public static AllocationService createAllocationService(Settings settings) {
+        return createAllocationService(settings, new ClusterSettings(Settings.EMPTY, ClusterSettings.BUILT_IN_CLUSTER_SETTINGS));
     }
 
-    public static AllocationService createAllocationService(final Settings settings, final ClusterSettings clusterSettings) {
+    public static AllocationService createAllocationService(Settings settings, ClusterSettings clusterSettings) {
         return new AllocationService(
-            Allocators.defaultAllocationDeciders(settings, clusterSettings),
+            defaultAllocationDeciders(settings, clusterSettings),
             NoopGatewayAllocator.INSTANCE,
             new BalancedShardsAllocator(settings),
             EmptyClusterInfoService.INSTANCE,
@@ -74,18 +74,18 @@ public final class Allocators {
         );
     }
 
-    public static AllocationDeciders defaultAllocationDeciders(final Settings settings, final ClusterSettings clusterSettings) {
-        final Collection<AllocationDecider> deciders = ClusterModule.createAllocationDeciders(settings, clusterSettings, Collections.emptyList());
+    public static AllocationDeciders defaultAllocationDeciders(Settings settings, ClusterSettings clusterSettings) {
+        Collection<AllocationDecider> deciders = ClusterModule.createAllocationDeciders(settings, clusterSettings, Collections.emptyList());
         return new AllocationDeciders(deciders);
     }
 
     private static final AtomicInteger portGenerator = new AtomicInteger();
 
-    public static DiscoveryNode newNode(final String nodeId, final Map<String, String> attributes) {
+    public static DiscoveryNode newNode(String nodeId, Map<String, String> attributes) {
         return new DiscoveryNode(
             "",
             nodeId,
-            new TransportAddress(TransportAddress.META_ADDRESS, Allocators.portGenerator.incrementAndGet()),
+            new TransportAddress(TransportAddress.META_ADDRESS, portGenerator.incrementAndGet()),
             attributes,
             Sets.newHashSet(DiscoveryNodeRole.MASTER_ROLE, DiscoveryNodeRole.DATA_ROLE),
             Version.CURRENT

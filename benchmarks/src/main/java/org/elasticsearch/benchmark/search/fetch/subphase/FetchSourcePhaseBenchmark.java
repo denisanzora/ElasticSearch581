@@ -50,45 +50,45 @@ public class FetchSourcePhaseBenchmark {
 
     @Setup
     public void setup() throws IOException {
-        this.sourceBytes = switch (this.source) {
+        sourceBytes = switch (source) {
             case "tiny" -> new BytesArray("{\"message\": \"short\"}");
-            case "short" -> this.read300BytesExample();
-            case "one_4k_field" -> this.buildBigExample("huge".repeat(1024));
-            case "one_4m_field" -> this.buildBigExample("huge".repeat(1024 * 1024));
-            default -> throw new IllegalArgumentException("Unknown source [" + this.source + "]");
+            case "short" -> read300BytesExample();
+            case "one_4k_field" -> buildBigExample("huge".repeat(1024));
+            case "one_4m_field" -> buildBigExample("huge".repeat(1024 * 1024));
+            default -> throw new IllegalArgumentException("Unknown source [" + source + "]");
         };
-        this.fetchContext = FetchSourceContext.of(
+        fetchContext = FetchSourceContext.of(
             true,
-            Strings.splitStringByCommaToArray(this.includes),
-            Strings.splitStringByCommaToArray(this.excludes)
+            Strings.splitStringByCommaToArray(includes),
+            Strings.splitStringByCommaToArray(excludes)
         );
-        this.includesSet = Set.of(this.fetchContext.includes());
-        this.excludesSet = Set.of(this.fetchContext.excludes());
-        this.parserConfig = XContentParserConfiguration.EMPTY.withFiltering(this.includesSet, this.excludesSet, false);
+        includesSet = Set.of(fetchContext.includes());
+        excludesSet = Set.of(fetchContext.excludes());
+        parserConfig = XContentParserConfiguration.EMPTY.withFiltering(includesSet, excludesSet, false);
     }
 
     private BytesReference read300BytesExample() throws IOException {
         return Streams.readFully(FetchSourcePhaseBenchmark.class.getResourceAsStream("300b_example.json"));
     }
 
-    private BytesReference buildBigExample(final String extraText) throws IOException {
-        String bigger = this.read300BytesExample().utf8ToString();
+    private BytesReference buildBigExample(String extraText) throws IOException {
+        String bigger = read300BytesExample().utf8ToString();
         bigger = "{\"huge\": \"" + extraText + "\"," + bigger.substring(1);
         return new BytesArray(bigger);
     }
 
     @Benchmark
     public BytesReference filterObjects() throws IOException {
-        final SourceLookup lookup = new SourceLookup(new SourceLookup.BytesSourceProvider(this.sourceBytes));
-        final Object value = lookup.filter(this.fetchContext);
+        SourceLookup lookup = new SourceLookup(new SourceLookup.BytesSourceProvider(sourceBytes));
+        Object value = lookup.filter(fetchContext);
         return FetchSourcePhase.objectToBytes(value, XContentType.JSON, Math.min(1024, lookup.internalSourceRef().length()));
     }
 
     @Benchmark
     public BytesReference filterXContentOnParser() throws IOException {
-        final BytesStreamOutput streamOutput = new BytesStreamOutput(Math.min(1024, this.sourceBytes.length()));
-        final XContentBuilder builder = new XContentBuilder(XContentType.JSON.xContent(), streamOutput);
-        try (final XContentParser parser = XContentType.JSON.xContent().createParser(this.parserConfig, this.sourceBytes.streamInput())) {
+        BytesStreamOutput streamOutput = new BytesStreamOutput(Math.min(1024, sourceBytes.length()));
+        XContentBuilder builder = new XContentBuilder(XContentType.JSON.xContent(), streamOutput);
+        try (XContentParser parser = XContentType.JSON.xContent().createParser(parserConfig, sourceBytes.streamInput())) {
             builder.copyCurrentStructure(parser);
             return BytesReference.bytes(builder);
         }
@@ -96,16 +96,16 @@ public class FetchSourcePhaseBenchmark {
 
     @Benchmark
     public BytesReference filterXContentOnBuilder() throws IOException {
-        final BytesStreamOutput streamOutput = new BytesStreamOutput(Math.min(1024, this.sourceBytes.length()));
-        final XContentBuilder builder = new XContentBuilder(
+        BytesStreamOutput streamOutput = new BytesStreamOutput(Math.min(1024, sourceBytes.length()));
+        XContentBuilder builder = new XContentBuilder(
             XContentType.JSON.xContent(),
             streamOutput,
-                this.includesSet,
-                this.excludesSet,
+                includesSet,
+                excludesSet,
             XContentType.JSON.toParsedMediaType()
         );
         try (
-                final XContentParser parser = XContentType.JSON.xContent().createParser(XContentParserConfiguration.EMPTY, this.sourceBytes.streamInput())
+                XContentParser parser = XContentType.JSON.xContent().createParser(XContentParserConfiguration.EMPTY, sourceBytes.streamInput())
         ) {
             builder.copyCurrentStructure(parser);
             return BytesReference.bytes(builder);

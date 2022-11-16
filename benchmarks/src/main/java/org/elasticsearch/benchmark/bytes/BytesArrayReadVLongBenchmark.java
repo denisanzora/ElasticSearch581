@@ -42,26 +42,26 @@ public class BytesArrayReadVLongBenchmark {
 
     @Setup
     public void initResults() throws IOException {
-        BytesStreamOutput tmp = new BytesStreamOutput();
-        for (int i = 0; i < this.entries / 2; i++) {
+        final BytesStreamOutput tmp = new BytesStreamOutput();
+        for (int i = 0; i < entries / 2; i++) {
             tmp.writeVLong(i);
         }
-        for (int i = 0; i < this.entries / 2; i++) {
+        for (int i = 0; i < entries / 2; i++) {
             tmp.writeVLong(Long.MAX_VALUE - i);
         }
-        final BytesReference bytesArray = tmp.copyBytes();
+        BytesReference bytesArray = tmp.copyBytes();
         if (!(bytesArray instanceof BytesArray)) {
-            throw new AssertionError(EXPECTED_BYTES_ARRAY_BUT_SAW + "[" + bytesArray.getClass() + "]");
+            throw new AssertionError(BytesArrayReadVLongBenchmark.EXPECTED_BYTES_ARRAY_BUT_SAW + "[" + bytesArray.getClass() + "]");
         }
-        streamInput = bytesArray.streamInput();
+        this.streamInput = bytesArray.streamInput();
     }
 
     @Benchmark
     public long readVLong() throws IOException {
         long res = 0;
-        this.streamInput.reset();
-        for (int i = 0; i < this.entries; i++) {
-            res = res ^ this.streamInput.readVLong();
+        streamInput.reset();
+        for (int i = 0; i < entries; i++) {
+            res = res ^ streamInput.readVLong();
         }
         return res;
     }

@@ -37,6 +37,6 @@ public class DateFormatterFromBenchmark {
     public TemporalAccessor benchmarkFrom() {
         // benchmark an accessor that does not contain a timezone
         // this used to throw an exception earlier and thus was very very slow
-        return DateFormatters.from(this.accessor);
+        return DateFormatters.from(accessor);
     }
 }

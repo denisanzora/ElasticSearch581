@@ -42,26 +42,26 @@ public class PagedBytesReferenceReadVIntBenchmark {
 
     @Setup
     public void initResults() throws IOException {
-        BytesStreamOutput tmp = new BytesStreamOutput();
-        for (int i = 0; i < this.entries / 2; i++) {
+        final BytesStreamOutput tmp = new BytesStreamOutput();
+        for (int i = 0; i < entries / 2; i++) {
             tmp.writeVInt(i);
         }
-        for (int i = 0; i < this.entries / 2; i++) {
+        for (int i = 0; i < entries / 2; i++) {
             tmp.writeVInt(Integer.MAX_VALUE - i);
         }
-        final BytesReference pagedBytes = tmp.bytes();
+        BytesReference pagedBytes = tmp.bytes();
         if (!(pagedBytes instanceof PagedBytesReference)) {
-            throw new AssertionError(EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" + pagedBytes.getClass() + "]");
+            throw new AssertionError(PagedBytesReferenceReadVIntBenchmark.EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" + pagedBytes.getClass() + "]");
         }
-        streamInput = pagedBytes.streamInput();
+        this.streamInput = pagedBytes.streamInput();
     }
 
     @Benchmark
     public int readVInt() throws IOException {
         int res = 0;
-        this.streamInput.reset();
-        for (int i = 0; i < this.entries; i++) {
-            res = res ^ this.streamInput.readVInt();
+        streamInput.reset();
+        for (int i = 0; i < entries; i++) {
+            res = res ^ streamInput.readVInt();
         }
         return res;
     }

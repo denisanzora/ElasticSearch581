@@ -35,32 +35,32 @@ import java.util.concurrent.TimeUnit;
 public class PagedBytesReferenceReadVLongBenchmark {
 
     @Param("10000000")
-    int entries = 0;
+    int entries;
 
-    private StreamInput streamInput = null;
+    private StreamInput streamInput;
 
     @Setup
     public void initResults() throws IOException {
-        BytesStreamOutput tmp = new BytesStreamOutput();
-        for (int i = 0; i < this.entries / 2; i++) {
+        final BytesStreamOutput tmp = new BytesStreamOutput();
+        for (int i = 0; i < entries / 2; i++) {
             tmp.writeVLong(i);
         }
-        for (int i = 0; i < this.entries / 2; i++) {
+        for (int i = 0; i < entries / 2; i++) {
             tmp.writeVLong(Long.MAX_VALUE - i);
         }
-        final BytesReference pagedBytes = tmp.bytes();
+        BytesReference pagedBytes = tmp.bytes();
         if (!(pagedBytes instanceof PagedBytesReference)) {
             throw new AssertionError(PagedBytesReferenceReadVIntBenchmark.EXPECTED_PAGED_BYTES_REFERENCE_BUT_SAW + "[" + pagedBytes.getClass() + "]");
         }
-        streamInput = pagedBytes.streamInput();
+        this.streamInput = pagedBytes.streamInput();
     }
 
     @Benchmark
     public long readVLong() throws IOException {
         long res = 0;
-        this.streamInput.reset();
-        for (int i = 0; i < this.entries; i++) {
-            res = res ^ this.streamInput.readVLong();
+        streamInput.reset();
+        for (int i = 0; i < entries; i++) {
+            res = res ^ streamInput.readVLong();
         }
         return res;
     }

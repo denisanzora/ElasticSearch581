@@ -45,25 +45,25 @@ public class BytesArrayReadLongBenchmark {
 
     @Setup
     public void initResults() throws IOException {
-        BytesStreamOutput tmp = new BytesStreamOutput();
-        long bytes = new ByteSizeValue(this.dataMb, ByteSizeUnit.MB).getBytes();
+        final BytesStreamOutput tmp = new BytesStreamOutput();
+        final long bytes = new ByteSizeValue(dataMb, ByteSizeUnit.MB).getBytes();
         for (int i = 0; i < bytes / 8; i++) {
             tmp.writeLong(i);
         }
-        this.bytesArray = tmp.copyBytes();
-        if (!(bytesArray instanceof BytesArray)) {
-            throw new AssertionError(BytesArrayReadVLongBenchmark.EXPECTED_BYTES_ARRAY_BUT_SAW + "[" + this.bytesArray.getClass() + "]");
+        bytesArray = tmp.copyBytes();
+        if (!(this.bytesArray instanceof BytesArray)) {
+            throw new AssertionError(BytesArrayReadVLongBenchmark.EXPECTED_BYTES_ARRAY_BUT_SAW + "[" + bytesArray.getClass() + "]");
         }
-        this.streamInput = this.bytesArray.streamInput();
+        streamInput = bytesArray.streamInput();
     }
 
     @Benchmark
     public final long readLong() throws IOException {
         long res = 0L;
-        this.streamInput.reset();
-        int reads = this.bytesArray.length() / 8;
+        streamInput.reset();
+        final int reads = bytesArray.length() / 8;
         for (int i = 0; i < reads; i++) {
-            res = res ^ this.streamInput.readLong();
+            res = res ^ streamInput.readLong();
         }
         return res;
     }

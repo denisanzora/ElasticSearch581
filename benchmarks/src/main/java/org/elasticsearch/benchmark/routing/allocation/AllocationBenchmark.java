@@ -104,23 +104,23 @@ public class AllocationBenchmark {
 
     public int numTags = 2;
 
-    private AllocationService strategy = null;
-    private ClusterState initialClusterState = null;
+    private AllocationService strategy;
+    private ClusterState initialClusterState;
 
     @Setup
     public void setUp() throws Exception {
-        String[] params = this.indicesShardsReplicasNodes.split("\\|");
+        final String[] params = indicesShardsReplicasNodes.split("\\|");
 
-        final int numIndices = this.toInt(params[0]);
-        final int numShards = this.toInt(params[1]);
-        final int numReplicas = this.toInt(params[2]);
-        final int numNodes = this.toInt(params[3]);
+        int numIndices = toInt(params[0]);
+        int numShards = toInt(params[1]);
+        int numReplicas = toInt(params[2]);
+        int numNodes = toInt(params[3]);
 
-        this.strategy = Allocators.createAllocationService(
+        strategy = Allocators.createAllocationService(
             Settings.builder().put("cluster.routing.allocation.awareness.attributes", "tag").build()
         );
 
-        final Metadata.Builder mb = Metadata.builder();
+        Metadata.Builder mb = Metadata.builder();
         for (int i = 1; i <= numIndices; i++) {
             mb.put(
                 IndexMetadata.builder("test_" + i)
@@ -129,32 +129,32 @@ public class AllocationBenchmark {
                     .numberOfReplicas(numReplicas)
             );
         }
-        final Metadata metadata = mb.build();
-        final RoutingTable.Builder rb = RoutingTable.builder();
+        Metadata metadata = mb.build();
+        RoutingTable.Builder rb = RoutingTable.builder();
         for (int i = 1; i <= numIndices; i++) {
             rb.addAsNew(metadata.index("test_" + i));
         }
-        final RoutingTable routingTable = rb.build();
-        final DiscoveryNodes.Builder nb = DiscoveryNodes.builder();
+        RoutingTable routingTable = rb.build();
+        DiscoveryNodes.Builder nb = DiscoveryNodes.builder();
         for (int i = 1; i <= numNodes; i++) {
-            nb.add(Allocators.newNode("node" + i, Collections.singletonMap("tag", "tag_" + (i % this.numTags))));
+            nb.add(Allocators.newNode("node" + i, Collections.singletonMap("tag", "tag_" + (i % numTags))));
         }
-        this.initialClusterState = ClusterState.builder(ClusterName.CLUSTER_NAME_SETTING.getDefault(Settings.EMPTY))
+        initialClusterState = ClusterState.builder(ClusterName.CLUSTER_NAME_SETTING.getDefault(Settings.EMPTY))
             .metadata(metadata)
             .routingTable(routingTable)
             .nodes(nb)
             .build();
     }
 
-    private int toInt(final String v) {
+    private int toInt(String v) {
         return Integer.valueOf(v.trim());
     }
 
     @Benchmark
     public ClusterState measureAllocation() {
-        ClusterState clusterState = this.initialClusterState;
+        ClusterState clusterState = initialClusterState;
         while (clusterState.getRoutingNodes().hasUnassignedShards()) {
-            clusterState = this.strategy.applyStartedShards(
+            clusterState = strategy.applyStartedShards(
                 clusterState,
                 clusterState.getRoutingNodes()
                     .stream()
@@ -162,7 +162,7 @@ public class AllocationBenchmark {
                     .filter(ShardRouting::initializing)
                     .collect(Collectors.toList())
             );
-            clusterState = this.strategy.reroute(clusterState, "reroute");
+            clusterState = strategy.reroute(clusterState, "reroute");
         }
         return clusterState;
     }

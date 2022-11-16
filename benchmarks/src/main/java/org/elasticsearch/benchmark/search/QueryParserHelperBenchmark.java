@@ -85,21 +85,21 @@ public class QueryParserHelperBenchmark {
     @Setup
     public void setup() throws IOException {
         // pre: set up MapperService and SearchExecutionContext
-        final List<String> fields = new ArrayList<>();
-        for (int i = 0; NUMBER_OF_MAPPING_FIELDS > i; i++) {
+        List<String> fields = new ArrayList<>();
+        for (int i = 0; QueryParserHelperBenchmark.NUMBER_OF_MAPPING_FIELDS > i; i++) {
             fields.add(String.format("""
                 "field%d":{"type":"long"}""", i));
         }
-        final String mappings = """
+        String mappings = """
             {"_doc":{"properties":{""" + Strings.join(fields, ',') + "}}}";
 
-        this.mapperService = this.createMapperService(mappings);
-        final IndexWriterConfig iwc = new IndexWriterConfig(IndexShard.buildIndexAnalyzer(this.mapperService));
-        this.directory = new ByteBuffersDirectory();
-        final IndexWriter iw = new IndexWriter(this.directory, iwc);
+        mapperService = createMapperService(mappings);
+        IndexWriterConfig iwc = new IndexWriterConfig(IndexShard.buildIndexAnalyzer(mapperService));
+        directory = new ByteBuffersDirectory();
+        IndexWriter iw = new IndexWriter(directory, iwc);
 
         for (int i = 0; 2000 > i; i++) {
-            final ParsedDocument doc = this.mapperService.documentMapper().parse(this.buildDoc(i));
+            ParsedDocument doc = mapperService.documentMapper().parse(buildDoc(i));
             iw.addDocument(doc.rootDoc());
             if (0 == i % 100) {
                 iw.commit();
@@ -107,50 +107,50 @@ public class QueryParserHelperBenchmark {
         }
         iw.close();
 
-        this.indexReader = DirectoryReader.open(this.directory);
+        indexReader = DirectoryReader.open(directory);
     }
 
-    private SourceToParse buildDoc(final int docId) {
-        final List<String> fields = new ArrayList<>();
-        for (int i = 0; NUMBER_OF_MAPPING_FIELDS > i; i++) {
+    private SourceToParse buildDoc(int docId) {
+        List<String> fields = new ArrayList<>();
+        for (int i = 0; QueryParserHelperBenchmark.NUMBER_OF_MAPPING_FIELDS > i; i++) {
             if (0 == i % 2) continue;
-            if (0 == i % 3 && ((NUMBER_OF_MAPPING_FIELDS / 2) > docId)) continue;
+            if (0 == i % 3 && ((QueryParserHelperBenchmark.NUMBER_OF_MAPPING_FIELDS / 2) > docId)) continue;
             fields.add(String.format("""
                 "field%d":1""", i));
         }
-        final String source = "{" + String.join(",", fields) + "}";
+        String source = "{" + String.join(",", fields) + "}";
         return new SourceToParse(String.valueOf(docId), new BytesArray(source), XContentType.JSON);
     }
 
     @TearDown
     public void tearDown() {
-        IOUtils.closeWhileHandlingException(this.indexReader, this.directory);
+        IOUtils.closeWhileHandlingException(indexReader, directory);
     }
 
     @Benchmark
     public void expand() {
-        final Map<String, Float> fields = QueryParserHelper.resolveMappingFields(this.buildSearchExecutionContext(), Map.of("*", 1.0f));
-        assert 0 < fields.size() && NUMBER_OF_MAPPING_FIELDS > fields.size();
+        Map<String, Float> fields = QueryParserHelper.resolveMappingFields(buildSearchExecutionContext(), Map.of("*", 1.0f));
+        assert 0 < fields.size() && QueryParserHelperBenchmark.NUMBER_OF_MAPPING_FIELDS > fields.size();
     }
 
     protected SearchExecutionContext buildSearchExecutionContext() {
-        SimilarityService similarityService = new SimilarityService(mapperService.getIndexSettings(), null, Map.of());
+        final SimilarityService similarityService = new SimilarityService(this.mapperService.getIndexSettings(), null, Map.of());
         final long nowInMillis = 1;
         return new SearchExecutionContext(
             0,
             0,
-            this.mapperService.getIndexSettings(),
+            mapperService.getIndexSettings(),
             null,
             (ft, fdc) -> ft.fielddataBuilder(fdc).build(new IndexFieldDataCache.None(), new NoneCircuitBreakerService()),
-            this.mapperService,
-            this.mapperService.mappingLookup(),
+            mapperService,
+            mapperService.mappingLookup(),
             similarityService,
             null,
             XContentParserConfiguration.EMPTY.withRegistry(new NamedXContentRegistry(ClusterModule.getNamedXWriteables()))
                 .withDeprecationHandler(LoggingDeprecationHandler.INSTANCE),
             new NamedWriteableRegistry(ClusterModule.getNamedWriteables()),
             null,
-            new IndexSearcher(this.indexReader),
+            new IndexSearcher(indexReader),
             () -> nowInMillis,
             null,
             null,
@@ -160,18 +160,18 @@ public class QueryParserHelperBenchmark {
         );
     }
 
-    protected final MapperService createMapperService(final String mappings) {
-        final Settings settings = Settings.builder()
+    protected final MapperService createMapperService(String mappings) {
+        Settings settings = Settings.builder()
             .put("index.number_of_replicas", 0)
             .put("index.number_of_shards", 1)
             .put("index.version.created", Version.CURRENT)
             .build();
-        final IndexMetadata meta = IndexMetadata.builder("index").settings(settings).build();
-        final IndexSettings indexSettings = new IndexSettings(meta, settings);
-        final MapperRegistry mapperRegistry = new IndicesModule(Collections.emptyList()).getMapperRegistry();
+        IndexMetadata meta = IndexMetadata.builder("index").settings(settings).build();
+        IndexSettings indexSettings = new IndexSettings(meta, settings);
+        MapperRegistry mapperRegistry = new IndicesModule(Collections.emptyList()).getMapperRegistry();
 
-        final SimilarityService similarityService = new SimilarityService(indexSettings, null, Map.of());
-        final MapperService mapperService = new MapperService(
+        SimilarityService similarityService = new SimilarityService(indexSettings, null, Map.of());
+        MapperService mapperService = new MapperService(
             indexSettings,
             new IndexAnalyzers(
                 Map.of("default", new NamedAnalyzer("default", AnalyzerScope.INDEX, new StandardAnalyzer())),
@@ -186,7 +186,7 @@ public class QueryParserHelperBenchmark {
             new ProvidedIdFieldMapper(() -> true),
             new ScriptCompiler() {
                 @Override
-                public <T> T compile(final Script script, final ScriptContext<T> scriptContext) {
+                public <T> T compile(Script script, ScriptContext<T> scriptContext) {
                     throw new UnsupportedOperationException();
                 }
             }
@@ -195,7 +195,7 @@ public class QueryParserHelperBenchmark {
         try {
             mapperService.merge("_doc", new CompressedXContent(mappings), MapperService.MergeReason.MAPPING_UPDATE);
             return mapperService;
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }

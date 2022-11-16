@@ -55,7 +55,7 @@ public class LongKeyedBucketOrdsBenchmark {
     private static final long DISTINCT_VALUES_IN_BUCKETS = 10;
 
     private final PageCacheRecycler recycler = new PageCacheRecycler(Settings.EMPTY);
-    private final BigArrays bigArrays = new BigArrays(this.recycler, null, "REQUEST");
+    private final BigArrays bigArrays = new BigArrays(recycler, null, "REQUEST");
 
     /**
      * Force loading all of the implementations just for extra paranoia's sake.
@@ -64,7 +64,7 @@ public class LongKeyedBucketOrdsBenchmark {
      * thing it'd do. It is sneaky.
      */
     @Setup
-    public void forceLoadClasses(final Blackhole bh) {
+    public void forceLoadClasses(Blackhole bh) {
         bh.consume(LongKeyedBucketOrds.FromSingle.class);
         bh.consume(LongKeyedBucketOrds.FromMany.class);
         bh.consume(LongKeyedBucketOrds.FromManySmall.class);
@@ -75,13 +75,13 @@ public class LongKeyedBucketOrdsBenchmark {
      * because it is not needed.
      */
     @Benchmark
-    public void singleBucketIntoSingleImmutableMonmorphicInvocation(final Blackhole bh) {
-        try (final LongKeyedBucketOrds.FromSingle ords = new LongKeyedBucketOrds.FromSingle(bigArrays)) {
-            for (long i = 0; i < LIMIT; i++) {
-                ords.add(0, i % LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES);
+    public void singleBucketIntoSingleImmutableMonmorphicInvocation(Blackhole bh) {
+        try (LongKeyedBucketOrds.FromSingle ords = new LongKeyedBucketOrds.FromSingle(this.bigArrays)) {
+            for (long i = 0; LIMIT > i; i++) {
+                ords.add(0, i % DISTINCT_VALUES);
             }
-            if (DISTINCT_VALUES != ords.size()) {
-                throw new IllegalArgumentException("Expected [" + LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES + "] but found [" + ords.size() + "]");
+            if (LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES != ords.size()) {
+                throw new IllegalArgumentException("Expected [" + DISTINCT_VALUES + "] but found [" + ords.size() + "]");
             }
             bh.consume(ords);
         }
@@ -91,13 +91,13 @@ public class LongKeyedBucketOrdsBenchmark {
      * Emulates the way that most aggregations use {@link LongKeyedBucketOrds}.
      */
     @Benchmark
-    public void singleBucketIntoSingleImmutableMegamorphicInvocation(final Blackhole bh) {
-        try (final LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(bigArrays, CardinalityUpperBound.ONE)) {
-            for (long i = 0; i < LIMIT; i++) {
-                ords.add(0, i % LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES);
+    public void singleBucketIntoSingleImmutableMegamorphicInvocation(Blackhole bh) {
+        try (LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(this.bigArrays, CardinalityUpperBound.ONE)) {
+            for (long i = 0; LIMIT > i; i++) {
+                ords.add(0, i % DISTINCT_VALUES);
             }
-            if (DISTINCT_VALUES != ords.size()) {
-                throw new IllegalArgumentException("Expected [" + LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES + "] but found [" + ords.size() + "]");
+            if (LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES != ords.size()) {
+                throw new IllegalArgumentException("Expected [" + DISTINCT_VALUES + "] but found [" + ords.size() + "]");
             }
             bh.consume(ords);
         }
@@ -107,19 +107,19 @@ public class LongKeyedBucketOrdsBenchmark {
      * Emulates the way that {@link AutoDateHistogramAggregationBuilder} uses {@link LongKeyedBucketOrds}.
      */
     @Benchmark
-    public void singleBucketIntoSingleMutableMonmorphicInvocation(final Blackhole bh) {
-        LongKeyedBucketOrds.FromSingle ords = new LongKeyedBucketOrds.FromSingle(bigArrays);
-        for (long i = 0; i < LIMIT; i++) {
+    public void singleBucketIntoSingleMutableMonmorphicInvocation(Blackhole bh) {
+        LongKeyedBucketOrds.FromSingle ords = new LongKeyedBucketOrds.FromSingle(this.bigArrays);
+        for (long i = 0; LIMIT > i; i++) {
             if (0 == i % 100_000) {
                 ords.close();
                 bh.consume(ords);
-                ords = new LongKeyedBucketOrds.FromSingle(bigArrays);
+                ords = new LongKeyedBucketOrds.FromSingle(this.bigArrays);
             }
-            ords.add(0, i % LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES);
+            ords.add(0, i % DISTINCT_VALUES);
         }
-        if (DISTINCT_VALUES != ords.size()) {
+        if (LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES != ords.size()) {
             ords.close();
-            throw new IllegalArgumentException("Expected [" + LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES + "] but found [" + ords.size() + "]");
+            throw new IllegalArgumentException("Expected [" + DISTINCT_VALUES + "] but found [" + ords.size() + "]");
         }
         bh.consume(ords);
         ords.close();
@@ -131,18 +131,18 @@ public class LongKeyedBucketOrdsBenchmark {
      * {@link #singleBucketIntoSingleMutableMonmorphicInvocation monomorphic invocation}.
      */
     @Benchmark
-    public void singleBucketIntoSingleMutableMegamorphicInvocation(final Blackhole bh) {
-        LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(bigArrays, CardinalityUpperBound.ONE);
-        for (long i = 0; i < LIMIT; i++) {
+    public void singleBucketIntoSingleMutableMegamorphicInvocation(Blackhole bh) {
+        LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(this.bigArrays, CardinalityUpperBound.ONE);
+        for (long i = 0; LIMIT > i; i++) {
             if (0 == i % 100_000) {
                 ords.close();
                 bh.consume(ords);
-                ords = LongKeyedBucketOrds.build(this.bigArrays, CardinalityUpperBound.ONE);
+                ords = LongKeyedBucketOrds.build(bigArrays, CardinalityUpperBound.ONE);
             }
-            ords.add(0, i % LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES);
+            ords.add(0, i % DISTINCT_VALUES);
         }
-        if (DISTINCT_VALUES != ords.size()) {
-            throw new IllegalArgumentException("Expected [" + LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES + "] but found [" + ords.size() + "]");
+        if (LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES != ords.size()) {
+            throw new IllegalArgumentException("Expected [" + DISTINCT_VALUES + "] but found [" + ords.size() + "]");
         }
         bh.consume(ords);
         ords.close();
@@ -155,9 +155,9 @@ public class LongKeyedBucketOrdsBenchmark {
      * but we can't tell that up front.
      */
     @Benchmark
-    public void singleBucketIntoMulti(final Blackhole bh) {
-        try (final LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(bigArrays, CardinalityUpperBound.MANY)) {
-            singleBucketIntoMultiSmall(ords);
+    public void singleBucketIntoMulti(Blackhole bh) {
+        try (LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(this.bigArrays, CardinalityUpperBound.MANY)) {
+            this.singleBucketIntoMultiSmall(ords);
             bh.consume(ords);
         }
     }
@@ -169,19 +169,19 @@ public class LongKeyedBucketOrdsBenchmark {
      * bucket.
      */
     @Benchmark
-    public void singleBucketIntoMultiSmall(final Blackhole bh) {
-        try (final LongKeyedBucketOrds ords = new LongKeyedBucketOrds.FromManySmall(bigArrays, 60)) {
-            singleBucketIntoMultiSmall(ords);
+    public void singleBucketIntoMultiSmall(Blackhole bh) {
+        try (LongKeyedBucketOrds ords = new LongKeyedBucketOrds.FromManySmall(this.bigArrays, 60)) {
+            this.singleBucketIntoMultiSmall(ords);
             bh.consume(ords);
         }
     }
 
-    private void singleBucketIntoMultiSmall(final LongKeyedBucketOrds ords) {
-        for (long i = 0; i < LIMIT; i++) {
-            ords.add(0, i % DISTINCT_VALUES);
+    private void singleBucketIntoMultiSmall(LongKeyedBucketOrds ords) {
+        for (long i = 0; LIMIT > i; i++) {
+            ords.add(0, i % LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES);
         }
-        if (DISTINCT_VALUES != ords.size()) {
-            throw new IllegalArgumentException("Expected [" + DISTINCT_VALUES + "] but found [" + ords.size() + "]");
+        if (LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES != ords.size()) {
+            throw new IllegalArgumentException("Expected [" + LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES + "] but found [" + ords.size() + "]");
         }
     }
 
@@ -190,9 +190,9 @@ public class LongKeyedBucketOrdsBenchmark {
      * bounds on the values.
      */
     @Benchmark
-    public void multiBucketManySmall(final Blackhole bh) {
-        try (final LongKeyedBucketOrds ords = new LongKeyedBucketOrds.FromManySmall(bigArrays, 5)) {
-            multiBucket(bh, ords);
+    public void multiBucketManySmall(Blackhole bh) {
+        try (LongKeyedBucketOrds ords = new LongKeyedBucketOrds.FromManySmall(this.bigArrays, 5)) {
+            this.multiBucket(bh, ords);
         }
     }
 
@@ -200,18 +200,18 @@ public class LongKeyedBucketOrdsBenchmark {
      * Emulates an aggregation that collects from many buckets.
      */
     @Benchmark
-    public void multiBucketMany(final Blackhole bh) {
-        try (final LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(bigArrays, CardinalityUpperBound.MANY)) {
-            multiBucket(bh, ords);
+    public void multiBucketMany(Blackhole bh) {
+        try (LongKeyedBucketOrds ords = LongKeyedBucketOrds.build(this.bigArrays, CardinalityUpperBound.MANY)) {
+            this.multiBucket(bh, ords);
         }
     }
 
-    private void multiBucket(final Blackhole bh, final LongKeyedBucketOrds ords) {
-        for (long i = 0; i < LIMIT; i++) {
-            ords.add(i % DISTINCT_BUCKETS, i % DISTINCT_VALUES_IN_BUCKETS);
+    private void multiBucket(Blackhole bh, LongKeyedBucketOrds ords) {
+        for (long i = 0; LIMIT > i; i++) {
+            ords.add(i % LongKeyedBucketOrdsBenchmark.DISTINCT_BUCKETS, i % LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES_IN_BUCKETS);
         }
-        if (DISTINCT_VALUES != ords.size()) {
-            throw new IllegalArgumentException("Expected [" + DISTINCT_VALUES + "] but found [" + ords.size() + "]");
+        if (LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES != ords.size()) {
+            throw new IllegalArgumentException("Expected [" + LongKeyedBucketOrdsBenchmark.DISTINCT_VALUES + "] but found [" + ords.size() + "]");
         }
         bh.consume(ords);
     }
