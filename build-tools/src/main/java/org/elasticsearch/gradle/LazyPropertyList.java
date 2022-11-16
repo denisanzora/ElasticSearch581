@@ -79,7 +79,7 @@ public class LazyPropertyList<T> extends AbstractLazyPropertyCollection implemen
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        return delegate.stream().map(PropertyListEntry::getValue).collect(Collectors.toList()).containsAll(c);
+        return delegate.stream().map(PropertyListEntry::getValue).toList().containsAll(c);
     }
 
     @Override
@@ -159,12 +159,12 @@ public class LazyPropertyList<T> extends AbstractLazyPropertyCollection implemen
 
     @Override
     public ListIterator<T> listIterator() {
-        return delegate.stream().map(PropertyListEntry::getValue).collect(Collectors.toList()).listIterator();
+        return delegate.stream().map(PropertyListEntry::getValue).toList().listIterator();
     }
 
     @Override
     public ListIterator<T> listIterator(int index) {
-        return delegate.stream().peek(this::validate).map(PropertyListEntry::getValue).collect(Collectors.toList()).listIterator(index);
+        return delegate.stream().peek(this::validate).map(PropertyListEntry::getValue).toList().listIterator(index);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class LazyPropertyList<T> extends AbstractLazyPropertyCollection implemen
         return delegate.stream()
             .peek(this::validate)
             .map(PropertyListEntry::getValue)
-            .collect(Collectors.toList())
+            .toList()
             .subList(fromIndex, toIndex);
     }
 
@@ -181,7 +181,7 @@ public class LazyPropertyList<T> extends AbstractLazyPropertyCollection implemen
         return delegate.stream()
             .peek(this::validate)
             .filter(entry -> entry.getNormalization() != PropertyNormalization.IGNORE_VALUE)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -191,7 +191,7 @@ public class LazyPropertyList<T> extends AbstractLazyPropertyCollection implemen
      * @return a flattened collection filtered according to normalization strategy
      */
     public List<? extends T> getFlatNormalizedCollection() {
-        return getNormalizedCollection().stream().map(PropertyListEntry::getValue).collect(Collectors.toList());
+        return getNormalizedCollection().stream().map(PropertyListEntry::getValue).toList();
     }
 
     private void validate(PropertyListEntry<T> entry) {

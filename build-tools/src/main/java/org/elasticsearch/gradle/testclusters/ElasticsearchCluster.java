@@ -50,6 +50,7 @@ public class ElasticsearchCluster implements TestClusterConfiguration, Named {
 
     private static final Logger LOGGER = Logging.getLogger(ElasticsearchNode.class);
     private static final int CLUSTER_UP_TIMEOUT = 40;
+    private final String enabledIsFalse = "false";
     private static final TimeUnit CLUSTER_UP_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private final AtomicBoolean configurationFrozen = new AtomicBoolean(false);
@@ -353,10 +354,10 @@ public class ElasticsearchCluster implements TestClusterConfiguration, Named {
         ElasticsearchNode firstNode = null;
         for (ElasticsearchNode node : nodes) {
             if (node.getTestDistribution().equals(TestDistribution.INTEG_TEST)) {
-                node.defaultConfig.put("xpack.security.enabled", "false");
+                node.defaultConfig.put("xpack.security.enabled", enabledIsFalse);
             } else {
                 if (node.getVersion().onOrAfter("7.16.0")) {
-                    node.defaultConfig.put("cluster.deprecation_indexing.enabled", "false");
+                    node.defaultConfig.put("cluster.deprecation_indexing.enabled", enabledIsFalse);
                 }
             }
 
@@ -395,10 +396,9 @@ public class ElasticsearchCluster implements TestClusterConfiguration, Named {
         node.goToNextVersion();
         commonNodeConfig();
         nodeIndex += 1;
-        if (node.getTestDistribution().equals(TestDistribution.DEFAULT)) {
-            if (node.getVersion().onOrAfter("7.16.0")) {
-                node.setting("cluster.deprecation_indexing.enabled", "false");
-            }
+        if (node.getTestDistribution().equals(TestDistribution.DEFAULT) &&
+            (node.getVersion().onOrAfter("7.16.0"))) {
+            node.setting("cluster.deprecation_indexing.enabled", enabledIsFalse);
         }
         node.start();
     }
@@ -474,21 +474,21 @@ public class ElasticsearchCluster implements TestClusterConfiguration, Named {
     @Internal
     public List<String> getAllHttpSocketURI() {
         waitForAllConditions();
-        return nodes.stream().flatMap(each -> each.getAllHttpSocketURI().stream()).collect(Collectors.toList());
+        return nodes.stream().flatMap(each -> each.getAllHttpSocketURI().stream()).toList();
     }
 
     @Override
     @Internal
     public List<String> getAllTransportPortURI() {
         waitForAllConditions();
-        return nodes.stream().flatMap(each -> each.getAllTransportPortURI().stream()).collect(Collectors.toList());
+        return nodes.stream().flatMap(each -> each.getAllTransportPortURI().stream()).toList();
     }
 
     @Override
     @Internal
     public List<String> getAllReadinessPortURI() {
         waitForAllConditions();
-        return nodes.stream().flatMap(each -> each.getAllReadinessPortURI().stream()).collect(Collectors.toList());
+        return nodes.stream().flatMap(each -> each.getAllReadinessPortURI().stream()).toList();
     }
 
     public void waitForAllConditions() {
