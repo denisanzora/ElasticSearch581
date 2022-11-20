@@ -10,7 +10,12 @@ package org.elasticsearch.gradle.internal.conventions;
 
 import java.util.Locale;
 
-public abstract class GUtils {
+//convert to interface class
+public interface GUtils {
+    //add a private constructor
+    private GUtils() {
+        throw new UnsupportedOperationException("This is a Utility class and cannot be instantiated ")
+    }
 
     public static String capitalize(String s) {
         return s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1);
