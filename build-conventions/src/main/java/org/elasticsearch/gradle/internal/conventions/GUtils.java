@@ -14,9 +14,10 @@ import java.util.Locale;
 public interface class GUtils {
     //adding default private constructor
     private GUtils(){
-        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+        throw new UnsupportedOpertationException("This is a utility class and cannot be instatiated");
 
     }
+
 
     public static String capitalize(String s) {
         return s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1);
