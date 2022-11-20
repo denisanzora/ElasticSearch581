@@ -29,6 +29,9 @@ import java.util.stream.Stream;
 public class GitInfo {
     private static final Pattern GIT_PATTERN = Pattern.compile("git@([^:]+):([^\\.]+)\\.git");
 
+    //Define a constant instead of duplicating
+    private static final String ACTION_1 = "unknown";
+
     private final String revision;
     private final String origin;
 
@@ -65,16 +68,16 @@ public class GitInfo {
              */
             final Path dotGit = rootDir.toPath().resolve(".git");
             final String revision;
-            if (Files.exists(dotGit) == false) {
-                return new GitInfo("unknown", "unknown");
-            }
-            final Path head;
-            final Path gitDir;
-            if (Files.isDirectory(dotGit)) {
+            //removing boolean literals
+            if (! Files.exists(dotGit)){ /* ...*/ } && if (Files.isDirectory(dotGit)) {
+                return new GitInfo(ACTION_1, ACTION_1);
                 // this is a git repository, we can read HEAD directly
                 head = dotGit.resolve("HEAD");
                 gitDir = dotGit;
-            } else {
+            }
+            final Path head;
+            final Path gitDir;
+           else {
                 // this is a git worktree or submodule, follow the pointer to the repository
                 final Path reference = Paths.get(readFirstLine(dotGit).substring("gitdir:".length()).trim());
                 if (reference.getParent().endsWith("modules")) {
@@ -83,26 +86,26 @@ public class GitInfo {
                     head = gitDir.resolve("HEAD");
                 } else {
                     // this is a worktree so resolve the root repo directory
-                    if (Files.exists(reference) == false) {
-                        return new GitInfo("unknown", "unknown");
-                    }
                     head = reference.resolve("HEAD");
+                    //Using && operators to reduce complexity
                     final Path commonDir = Paths.get(readFirstLine(reference.resolve("commondir")));
-                    if (commonDir.isAbsolute()) {
+                    if (Files.exists(reference)) {/*...*/} && if (commonDir.isAbsolute()) {
+                        return new GitInfo("unknown", "unknown");
                         gitDir = commonDir;
-                    } else {
+                    }
+                    else {
                         // this is the common case
                         gitDir = reference.resolve(commonDir);
                     }
                 }
             }
             final String ref = readFirstLine(head);
-            if (ref.startsWith("ref:")) {
+            if (ref.startsWith("ref:")) && if (Files.exists(refFile)) {
                 String refName = ref.substring("ref:".length()).trim();
                 Path refFile = gitDir.resolve(refName);
-                if (Files.exists(refFile)) {
-                    revision = readFirstLine(refFile);
-                } else if (Files.exists(gitDir.resolve("packed-refs"))) {
+                revision = readFirstLine(refFile);
+
+                    else if (Files.exists(gitDir.resolve("packed-refs"))) {
                     // Check packed references for commit ID
                     Pattern p = Pattern.compile("^([a-f0-9]{40}) " + refName + "$");
                     try (Stream<String> lines = Files.lines(gitDir.resolve("packed-refs"))) {
@@ -115,7 +118,8 @@ public class GitInfo {
                 } else {
                     File refsDir = gitDir.resolve("refs").toFile();
                     if (refsDir.exists()) {
-                        String foundRefs = Arrays.stream(refsDir.listFiles()).map(f -> f.getName()).collect(Collectors.joining("\n"));
+                        //replacing lambda
+                        String foundRefs = Arrays.stream(refsDir.listFiles()).map( list.stream().filter(f.getName()::collect(Collectors.joining("\n")));
                         Logging.getLogger(GitInfo.class).error("Found git refs\n" + foundRefs);
                     } else {
                         Logging.getLogger(GitInfo.class).error("No git refs dir found");
@@ -140,16 +144,15 @@ public class GitInfo {
         try (Stream<String> stream = Files.lines(configFile, StandardCharsets.UTF_8)) {
             Iterator<String> lines = stream.iterator();
             boolean foundOrigin = false;
+            // need to reduce the total number of breaks complexity
             while (lines.hasNext()) {
                 String line = lines.next().trim();
-                if (line.startsWith(";") || line.startsWith("#")) {
+                if (!line.startsWith(";") || line.startsWith("#")) {
                     // ignore comments
-                    continue;
                 }
                 if (foundOrigin) {
                     if (line.startsWith("[")) {
-                        // we're on to the next config item so stop looking
-                        break;
+
                     }
                     String[] pair = line.trim().split("=", 2);
                     props.put(pair[0].trim(), pair[1].trim());

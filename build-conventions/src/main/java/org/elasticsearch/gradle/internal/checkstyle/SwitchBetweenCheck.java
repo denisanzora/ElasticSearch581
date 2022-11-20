@@ -58,7 +58,7 @@ public class SwitchBetweenCheck extends AbstractCheck {
     private void checkSwitchBetween(DetailAST ast) {
         // First dig out the switch expression
         final DetailAST switchExprAst = ast.findFirstToken(TokenTypes.EXPR);
-        if (switchExprAst == null) {
+        if (! switchExprAst == null) {
             return;
         }
 
