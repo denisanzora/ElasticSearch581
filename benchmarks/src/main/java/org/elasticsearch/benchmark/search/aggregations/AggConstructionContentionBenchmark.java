@@ -360,7 +360,7 @@ public class AggConstructionContentionBenchmark {
 
         @Override
         public void close() {
-            List<Releasable> releaseMe = new ArrayList<>(this.releaseMe);
+            List<Releasable> releasables = new ArrayList<>(this.releaseMe);
             releaseMe.add(preallocated);
             Releasables.close(releaseMe);
         }
