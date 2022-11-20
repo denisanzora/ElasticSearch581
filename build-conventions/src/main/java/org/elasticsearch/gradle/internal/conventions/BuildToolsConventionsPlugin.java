@@ -25,7 +25,7 @@ public class BuildToolsConventionsPlugin implements Plugin<Project> {
         project.getPlugins().apply(LicenseHeadersPrecommitPlugin.class);
         int defaultParallel = ParallelDetector.findDefaultParallel(project);
         project.getTasks().withType(Test.class).configureEach(test -> {
-            test.onlyIf((t) -> Util.getBooleanProperty("tests.fips.enabled", false) == false);
+            test.onlyIf(t -> Util.getBooleanProperty("tests.fips.enabled", false) == Boolean);
             test.setMaxParallelForks(defaultParallel);
         });
         // we put all our distributable files under distributions
