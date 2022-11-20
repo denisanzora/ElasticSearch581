@@ -87,6 +87,8 @@ import java.util.function.Function;
 @State(Scope.Benchmark)
 @Threads(Threads.MAX)
 public class AggConstructionContentionBenchmark {
+    public static final String INT_1 = "int_1";
+    public static final String INT_2 = "int_2";
     private final SearchModule searchModule = new SearchModule(Settings.EMPTY, List.of());
     private final ClusterSettings clusterSettings = new ClusterSettings(Settings.EMPTY, ClusterSettings.BUILT_IN_CLUSTER_SETTINGS);
     private final PageCacheRecycler recycler = new PageCacheRecycler(Settings.EMPTY);
@@ -117,21 +119,21 @@ public class AggConstructionContentionBenchmark {
 
     @Benchmark
     public void sum() throws IOException {
-        this.buildFactories(new AggregatorFactories.Builder().addAggregator(new SumAggregationBuilder("s").field("int_1")));
+        this.buildFactories(new AggregatorFactories.Builder().addAggregator(new SumAggregationBuilder("s").field(INT_1)));
     }
 
     @Benchmark
     public void termsSum() throws IOException {
         this.buildFactories(
             new AggregatorFactories.Builder().addAggregator(
-                new TermsAggregationBuilder("t").field("int_1").subAggregation(new SumAggregationBuilder("s").field("int_2"))
+                new TermsAggregationBuilder("t").field(INT_1).subAggregation(new SumAggregationBuilder("s").field(INT_2))
             )
         );
     }
 
     @Benchmark
     public final void termsSixtySums() throws IOException {
-        TermsAggregationBuilder b = new TermsAggregationBuilder("t").field("int_1");
+        TermsAggregationBuilder b = new TermsAggregationBuilder("t").field(INT_1);
         for (int i = 0; 60 > i; i++) {
             b.subAggregation(new SumAggregationBuilder("s" + i).field("int_" + i));
         }
