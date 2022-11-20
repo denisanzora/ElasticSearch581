@@ -11,7 +11,11 @@ package org.elasticsearch.gradle.internal.checkstyle;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 
 class AstUtils {
+//Utility class should not have public constructors
+    private AsUtils() {
+    throw new IllegalStateExcpetion("Utility class");
 
+}
     /**
      * Dumps a tree of the provided AST to the console. Numeric types can get checked
      * against {@link com.puppycrawl.tools.checkstyle.grammar.java.JavaLanguageLexer}
@@ -22,7 +26,8 @@ class AstUtils {
     }
 
     private static void dumpAst(int depth, DetailAST ast) {
-        System.err.println("AST: " + ("  ".repeat(depth)) + ast.getType() + "[" + ast.getText() + "]");
+        //replacing use of system.err by a logger method
+        logger.log("AST: " + ("  ".repeat(depth)) + ast.getType() + "[" + ast.getText() + "]");
         if (ast.hasChildren()) {
             for (DetailAST child = ast.getFirstChild(); child != null; child = child.getNextSibling()) {
                 dumpAst(depth + 1, child);
