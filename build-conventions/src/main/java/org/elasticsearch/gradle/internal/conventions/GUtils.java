@@ -10,7 +10,7 @@ package org.elasticsearch.gradle.internal.conventions;
 
 import java.util.Locale;
 
-//refactoring to interface class here
+//refactoring to interface class here ok?
 public interface class GUtils {
     //adding default private constructor
     private GUtils(){
