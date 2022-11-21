@@ -126,6 +126,7 @@ public class ElasticsearchNode implements TestClusterConfiguration {
     );
     private static final String HOSTNAME_OVERRIDE = "LinuxDarwinHostname";
     private static final String COMPUTERNAME_OVERRIDE = "WindowsComputername";
+    public static final String CLUSTER_NAME = "cluster.name";
 
     private final String path;
     private final String name;
@@ -218,7 +219,7 @@ public class ElasticsearchNode implements TestClusterConfiguration {
         esInputFile = workingDir.resolve("es.in");
         tmpDir = workingDir.resolve("tmp");
         waitConditions.put("ports files", this::checkPortsFilesExistWithDelay);
-        defaultConfig.put("cluster.name", clusterName);
+        defaultConfig.put(CLUSTER_NAME, clusterName);
 
         pluginAndModuleConfiguration = project.getObjects().fileCollection();
         setTestDistribution(TestDistribution.INTEG_TEST);
@@ -499,6 +500,25 @@ public class ElasticsearchNode implements TestClusterConfiguration {
         return sw.toString();
     }
 
+    public synchronized void setupStream() throws IOException {
+        if (isWorkingDirConfigured == false) {
+            logToProcessStdout("Configuring working directory: " + workingDir);
+            // make sure we always start fresh
+            if (Files.exists(workingDir)) {
+                    if (preserveDataDir) {
+                        try {
+                            Files.list(workingDir).filter(path -> path.equals(confPathData) == false).forEach(this::uncheckedDeleteWithRetry);
+                        }
+                        catch (Exception e) {
+                            throw e;
+                        }
+                    } else {
+                        deleteWithRetry(workingDir);
+                    }
+            }
+            isWorkingDirConfigured = true;
+        }
+    }
     @Override
     public synchronized void start() {
         LOGGER.info("Starting `{}`", this);
@@ -510,18 +530,7 @@ public class ElasticsearchNode implements TestClusterConfiguration {
         }
 
         try {
-            if (isWorkingDirConfigured == false) {
-                logToProcessStdout("Configuring working directory: " + workingDir);
-                // make sure we always start fresh
-                if (Files.exists(workingDir)) {
-                    if (preserveDataDir) {
-                        Files.list(workingDir).filter(path -> path.equals(confPathData) == false).forEach(this::uncheckedDeleteWithRetry);
-                    } else {
-                        deleteWithRetry(workingDir);
-                    }
-                }
-                isWorkingDirConfigured = true;
-            }
+            setupStream();
             setupNodeDistribution(getExtractedDistributionDir());
             createWorkingDir();
         } catch (IOException e) {
@@ -1000,12 +1009,12 @@ public class ElasticsearchNode implements TestClusterConfiguration {
 
     @Internal
     public File getServerLog() {
-        return confPathLogs.resolve(defaultConfig.get("cluster.name") + "_server.json").toFile();
+        return confPathLogs.resolve(defaultConfig.get(CLUSTER_NAME) + "_server.json").toFile();
     }
 
     @Internal
     public File getAuditLog() {
-        return confPathLogs.resolve(defaultConfig.get("cluster.name") + "_audit.json").toFile();
+        return confPathLogs.resolve(defaultConfig.get(CLUSTER_NAME) + "_audit.json").toFile();
     }
 
     @Override
